@@ -132,7 +132,11 @@ impl Transaction {
 		self.done = true;
 		// Cancel this transaction
 		if self.write {
-			self.inner.rollback().await?;
+			if let Err(err) = self.inner.rollback().await {
+				println!("Failed to cancel transaction!: {}", err);
+				return Err(err.into());
+			}
+			
 		}
 		// Continue
 		Ok(())
@@ -157,7 +161,10 @@ impl Transaction {
 		}
 		self.done = true;
 		// Commit this transaction
-		self.inner.commit().await?;
+		if let Err(err) = self.inner.commit().await {
+			println!("Commit error!: {}", err);
+			return Err(err.into());
+		}
 		// Continue
 		Ok(())
 	}

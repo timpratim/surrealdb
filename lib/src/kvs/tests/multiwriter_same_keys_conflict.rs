@@ -1,8 +1,6 @@
 #[tokio::test]
 #[serial]
 async fn multiwriter_same_keys_conflict() {
-	println!("begin: current global read transactions: {}", GLOBAL_TXN_READ_COUNT.load(Ordering::SeqCst));
-	println!("begin: current global write transactions: {}", GLOBAL_TXN_WRITE_COUNT.load(Ordering::SeqCst));
 	// Create a new datastore
 	let ds = new_ds().await;
 	// Insert an initial key
@@ -36,6 +34,4 @@ async fn multiwriter_same_keys_conflict() {
 	let val = tx.get("test").await.unwrap().unwrap();
 	assert_eq!(val, b"original text");
 	tx.cancel().await.unwrap();
-	println!("end: current global read transactions: {}", GLOBAL_TXN_READ_COUNT.load(Ordering::SeqCst));
-	println!("end: current global write transactions: {}", GLOBAL_TXN_WRITE_COUNT.load(Ordering::SeqCst));
 }
