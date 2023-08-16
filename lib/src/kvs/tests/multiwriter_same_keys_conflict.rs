@@ -1,4 +1,4 @@
-#[test(tokio::test)]
+#[tokio::test]
 #[serial]
 async fn multiwriter_same_keys_conflict() {
 	println!("begin: current global read transactions: {}", GLOBAL_TXN_READ_COUNT.load(Ordering::SeqCst));
