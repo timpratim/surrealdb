@@ -67,7 +67,7 @@ run_task = { name = ["start-surrealdb", "test-workspace-coverage-complete", "sto
 [tasks.test-kvs]
 private = true
 command = "cargo"
-args = ["test", "--locked", "--package", "surrealdb", "--no-default-features", "--features", "${_TEST_FEATURES}", "--lib", "kvs"]
+args = ["test", "--locked", "--package", "surrealdb", "--no-default-features", "--features", "${_TEST_FEATURES}", "--lib", "kvs", "--", "--nocapture"]
 
 
 [tasks.test-api-integration]

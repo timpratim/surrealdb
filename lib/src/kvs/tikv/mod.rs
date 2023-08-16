@@ -10,11 +10,15 @@ use std::ops::Range;
 use tikv::CheckLevel;
 use tikv::TimestampExt;
 use tikv::TransactionOptions;
+use core::sync::atomic::Ordering;
+use core::sync::atomic::AtomicUsize;
 
 pub struct Datastore {
 	db: tikv::TransactionClient,
 }
 
+pub static GLOBAL_TXN_READ_COUNT: AtomicUsize = AtomicUsize::new(0);
+pub static GLOBAL_TXN_WRITE_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub struct Transaction {
 	// Is the transaction complete?
 	done: bool,
@@ -82,12 +86,21 @@ impl Datastore {
 		}
 		// Create a new distributed transaction
 		match self.db.begin_with_options(opt).await {
-			Ok(inner) => Ok(Transaction {
-				done: false,
-				check: Check::Warn,
-				write,
-				inner,
-			}),
+			Ok(inner) => {
+				if write {
+					GLOBAL_TXN_WRITE_COUNT.fetch_add(1, Ordering::SeqCst);
+					println!("New write transaction! Total: {}", GLOBAL_TXN_WRITE_COUNT.load(Ordering::SeqCst));
+				} else {
+					GLOBAL_TXN_READ_COUNT.fetch_add(1, Ordering::SeqCst);
+					println!("New read transaction! Total: {}", GLOBAL_TXN_READ_COUNT.load(Ordering::SeqCst));
+				}
+				Ok(Transaction {
+					done: false,
+					check: Check::Warn,
+					write,
+					inner,
+				})
+			},
 			Err(e) => Err(Error::Tx(e.to_string())),
 		}
 	}
@@ -109,6 +122,13 @@ impl Transaction {
 			return Err(Error::TxFinished);
 		}
 		// Mark this transaction as done
+		if self.write {
+			GLOBAL_TXN_WRITE_COUNT.fetch_sub(1, Ordering::SeqCst);
+			println!("Cancel transaction! Total: {}", GLOBAL_TXN_WRITE_COUNT.load(Ordering::SeqCst));
+		} else {
+			GLOBAL_TXN_READ_COUNT.fetch_sub(1, Ordering::SeqCst);
+			println!("Cancel transaction! Total: {}", GLOBAL_TXN_READ_COUNT.load(Ordering::SeqCst));
+		}
 		self.done = true;
 		// Cancel this transaction
 		if self.write {
@@ -128,6 +148,13 @@ impl Transaction {
 			return Err(Error::TxReadonly);
 		}
 		// Mark this transaction as done
+		if self.write {
+			GLOBAL_TXN_WRITE_COUNT.fetch_sub(1, Ordering::SeqCst);
+			println!("Commit transaction! Total: {}", GLOBAL_TXN_WRITE_COUNT.load(Ordering::SeqCst));
+		} else {
+			GLOBAL_TXN_READ_COUNT.fetch_sub(1, Ordering::SeqCst);
+			println!("Commit transaction! Total: {}", GLOBAL_TXN_READ_COUNT.load(Ordering::SeqCst));
+		}
 		self.done = true;
 		// Commit this transaction
 		self.inner.commit().await?;

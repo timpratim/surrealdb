@@ -90,6 +90,9 @@ mod tikv {
 	use crate::kvs::Datastore;
 	use crate::kvs::Transaction;
 	use serial_test::serial;
+	use crate::kvs::tikv::GLOBAL_TXN_READ_COUNT;
+	use crate::kvs::tikv::GLOBAL_TXN_WRITE_COUNT;
+	use core::sync::atomic::Ordering;
 
 	async fn new_ds() -> Datastore {
 		let ds = Datastore::new("tikv:127.0.0.1:2379").await.unwrap();
