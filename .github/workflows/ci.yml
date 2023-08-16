@@ -544,10 +544,10 @@ jobs:
           args: --debug cargo-make
 
       - name: Test tikv engine
-        uses: actions-rs/cargo@v1
-        with:
-          command: make
-          args: ci-api-integration-tikv
+        run: |
+          while true; do
+            cargo make ci-api-integration-tikv
+          done
 
   # fdb-engine:
   #   name: FoundationDB engine
