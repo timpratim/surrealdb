@@ -28,6 +28,7 @@ jobs:
           ls -lah /home/runner/work/surrealdb/surrealdb/ || true
           ls -lah /home/runner/work/surrealdb/surrealdb/.github || true
           ls -lah /home/runner/work/surrealdb/surrealdb/.github/workflows || true
+          ls -lah /home/runner/work/surrealdb/surrealdb/.github/workflows/docker.yml || true
 
       - name: Call the Docker workflow
         uses: ./.github/workflows/docker.yml
