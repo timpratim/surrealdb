@@ -22,9 +22,9 @@ on:
         default: false
     secrets:
       DOCKER_USER:
-        required: true
+        required: false
       DOCKER_PASS:
-        required: true
+        required: false
   push:
     branches:
       - main
