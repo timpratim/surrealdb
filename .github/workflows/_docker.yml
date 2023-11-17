@@ -36,7 +36,7 @@ defaults:
 
 jobs:
   docker:
-    name: Build and publish Docker image
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-latest
     env:
       docker-tag-current: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:${{ inputs.tag-prefix }}${{ matrix.tag-suffix }}
@@ -45,38 +45,46 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Base production AMD64 image
-          - dockerfile: Dockerfile
+          ########################################
+          # Base images
+          ########################################
+          # Prod AMD64 image
+          - job-name: Base Prod AMD64
+            dockerfile: docker/Dockerfile
             build-target: prod
             platform: linux/amd64
-          # Base production ARM64 image
-          - dockerfile: Dockerfile
+          # Prod ARM64 image
+          - job-name: Base Prod ARM64
+            dockerfile: docker/Dockerfile
             build-target: prod
             platform: linux/arm64
-          # Base dev AMD64 image
-          - tag-suffix: -dev
-            dockerfile: Dockerfile
-            build-target: dev
-            platform: linux/amd64
-          # Base dev ARM64 image
-          - tag-suffix: -dev
-            dockerfile: Dockerfile
-            build-target: dev
-            platform: linux/arm64
-          #
-          # FoundationDB images (FDB client library is only available for amd64)
-          #
-
-          # FoundationDB production AMD64 image
-          - image-suffix: -fdb
-            dockerfile: Dockerfile.fdb
-            build-target: prod
-            platform: linux/amd64
-
-          # FoundationDB dev AMD64 image
-          - image-suffix: -fdb
+          # Dev AMD64 image
+          - job-name: Base Dev AMD64
             tag-suffix: -dev
-            dockerfile: Dockerfile.fdb
+            dockerfile: docker/Dockerfile
+            build-target: dev
+            platform: linux/amd64
+          # Dev ARM64 image
+          - job-name: Base Dev ARM64
+            tag-suffix: -dev
+            dockerfile: docker/Dockerfile
+            build-target: dev
+            platform: linux/arm64
+
+          ########################################
+          # FoundationDB images (FDB client library is only available for amd64)
+          ########################################
+          # Prod AMD64 image
+          - job-name: FDB Prod AMD64
+            image-suffix: -fdb
+            dockerfile: docker/Dockerfile.fdb
+            build-target: prod
+            platform: linux/amd64
+          # Dev AMD64 image
+          - job-name: FDB Dev AMD64
+            image-suffix: -fdb
+            tag-suffix: -dev
+            dockerfile: docker/Dockerfile.fdb
             build-target: dev
             platform: linux/amd64
 
