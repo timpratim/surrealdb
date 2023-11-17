@@ -37,7 +37,7 @@ defaults:
 jobs:
   docker:
     name: ${{ matrix.job-name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
     env:
       docker-tag-current: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:${{ inputs.tag-prefix }}${{ matrix.tag-suffix }}
       docker-tag-latest: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:latest${{ matrix.tag-suffix }}
