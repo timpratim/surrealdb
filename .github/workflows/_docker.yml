@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       image-prefix:
-        required: true
+        required: false
         type: string
         default: surrealdb
       # i.e. nightly, 1.0.0
@@ -12,12 +12,12 @@ on:
         required: true
         type: string
       publish:
-        required: true
+        required: false
         type: boolean
         default: false
       # Use it when a new release is pushed. Not for nightly builds.
       update-latest:
-        required: true
+        required: false
         type: boolean
         default: false
     secrets:
