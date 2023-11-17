@@ -32,7 +32,7 @@ jobs:
           ls -lah /home/runner/work/surrealdb/surrealdb/.github/workflows/docker.yml || true
 
       - name: Call the Docker workflow
-        uses: _workflows/.github/workflows/_docker.yml
+        uses: ./_workflows/.github/workflows/_docker.yml
         with:
           image-prefix: surrealdb-ci
           tag-prefix: ${{ github.sha }}
