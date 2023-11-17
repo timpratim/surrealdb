@@ -21,16 +21,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: _workflows
-      
-      - name: Check if workflow exists
-        run: |
-          set -x
-          pwd
-          ls -lah ./.github/workflows/
-          ls -lah /home/runner/work/surrealdb/surrealdb/ || true
-          ls -lah /home/runner/work/surrealdb/surrealdb/.github || true
-          ls -lah /home/runner/work/surrealdb/surrealdb/.github/workflows || true
-          ls -lah /home/runner/work/surrealdb/surrealdb/.github/workflows/docker.yml || true
 
       - name: Call the Docker workflow
         uses: ./_workflows/.github/workflows/_docker.yml
