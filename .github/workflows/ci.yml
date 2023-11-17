@@ -19,6 +19,7 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+        path: _workflows
       
       - name: Check if workflow exists
         run: |
@@ -31,7 +32,7 @@ jobs:
           ls -lah /home/runner/work/surrealdb/surrealdb/.github/workflows/docker.yml || true
 
       - name: Call the Docker workflow
-        uses: ./.github/workflows/_docker.yml
+        uses: _workflows/.github/workflows/_docker.yml
         with:
           image-prefix: surrealdb-ci
           tag-prefix: ${{ github.sha }}
