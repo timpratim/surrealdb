@@ -14,19 +14,10 @@ defaults:
 
 jobs:
   docker:
-    name: Test building the Docker image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v3
-        with:
-          path: _workflows
-
-      - name: Call the Docker workflow
-        uses: ./_workflows/.github/workflows/_docker.yml
-        with:
-          image-prefix: surrealdb-ci
-          tag-prefix: ${{ github.sha }}
+    uses: ./.github/workflows/_docker.yml
+    with:
+      image-prefix: surrealdb-ci
+      tag-prefix: ${{ github.sha }}
 
   # format:
   #   name: Check format
