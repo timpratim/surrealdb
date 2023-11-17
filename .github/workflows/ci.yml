@@ -22,7 +22,11 @@ jobs:
       
       - name: Check if workflow exists
         run: |
+          set -x
+          pwd
           ls -lah ./.github/workflows/
+          ls -lah /home/runner/work/surrealdb/surrealdb/ || true
+          ls -lah /home/runner/work/surrealdb/surrealdb/.github || true
 
       - name: Call the Docker workflow
         uses: ./.github/workflows/docker.yml
