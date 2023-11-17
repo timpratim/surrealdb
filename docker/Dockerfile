@@ -6,7 +6,7 @@ FROM cgr.dev/chainguard/rust:latest-dev as builder
 
 USER root
 RUN apk update
-RUN apk add patch clang curl
+RUN apk add patch clang curl gcc
 
 RUN cargo install cargo-make
 
@@ -14,7 +14,7 @@ RUN mkdir /surrealdb
 WORKDIR /surrealdb
 COPY . /surrealdb/
 
-RUN cargo build --features http-compression,storage-tikv --release --locked
+RUN cargo build  --features http-compression,storage-tikv --release --locked
 
 #
 # Development image

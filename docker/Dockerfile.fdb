@@ -26,6 +26,7 @@ FROM cgr.dev/chainguard/glibc-dynamic:latest-dev as dev
 
 USER root
 COPY --from=builder /surrealdb/target/release/surreal /surreal
+COPY --from=builder /usr/lib/libfdb_c.so /usr/lib/libfdb_c.so
 
 ENTRYPOINT ["/surreal"]
 
@@ -35,5 +36,6 @@ ENTRYPOINT ["/surreal"]
 FROM cgr.dev/chainguard/glibc-dynamic:latest as prod
 
 COPY --from=builder /surrealdb/target/release/surreal /surreal
+COPY --from=builder /usr/lib/libfdb_c.so /usr/lib/libfdb_c.so
 
 ENTRYPOINT ["/surreal"]
