@@ -19,6 +19,10 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+      
+      - name: Check if workflow exists
+        run: |
+          ls -lah ./.github/workflows/
 
       - name: Call the Docker workflow
         uses: ./.github/workflows/docker.yml
