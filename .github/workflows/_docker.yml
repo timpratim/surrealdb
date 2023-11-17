@@ -110,6 +110,7 @@ jobs:
         with:
           context: .
           load: true
+          file: ${{ matrix.dockerfile }}
           target: ${{ matrix.build-target }}
           platforms: ${{ matrix.platform }}
           tags: ${{ env.docker-tag-current }}
@@ -142,6 +143,7 @@ jobs:
         with:
           context: .
           push: true
+          file: ${{ matrix.dockerfile }}
           target: ${{ matrix.build-target }}
           platforms: ${{ matrix.platform }}
           tags: ${{ env.docker-tag-current }}
@@ -153,6 +155,7 @@ jobs:
         with:
           context: .
           push: true
+          file: ${{ matrix.dockerfile }}
           target: ${{ matrix.build-target }}
           platforms: ${{ matrix.platform }}
           tags: ${{ env.docker-tag-latest }}
