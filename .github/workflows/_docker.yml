@@ -33,7 +33,7 @@ defaults:
 jobs:
   docker:
     name: ${{ matrix.job-name }}
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ${{ matrix.runner }}
     env:
       docker-tag-current: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:${{ inputs.tag-prefix }}${{ matrix.tag-suffix }}
       docker-tag-latest: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:latest${{ matrix.tag-suffix }}
@@ -49,25 +49,27 @@ jobs:
             dockerfile: docker/Dockerfile
             build-target: prod
             platform: linux/amd64
+            runner: ubuntu-latest-4-cores
           # Prod ARM64 image
-          # TODO: Run these in an arm64 runner, otherwise it takes too long
-          # - job-name: Base Prod ARM64
-          #   dockerfile: docker/Dockerfile
-          #   build-target: prod
-          #   platform: linux/arm64
+          - job-name: Base Prod ARM64
+            dockerfile: docker/Dockerfile
+            build-target: prod
+            platform: linux/arm64
+            runner: ["self-hosted", "arm64", "4-cores"]
           # Dev AMD64 image
           - job-name: Base Dev AMD64
             tag-suffix: -dev
             dockerfile: docker/Dockerfile
             build-target: dev
             platform: linux/amd64
+            runner: ubuntu-latest-4-cores
           # Dev ARM64 image
-          # TODO: Run these in an arm64 runner, otherwise it takes too long
-          # - job-name: Base Dev ARM64
-          #   tag-suffix: -dev
-          #   dockerfile: docker/Dockerfile
-          #   build-target: dev
-          #   platform: linux/arm64
+          - job-name: Base Dev ARM64
+            tag-suffix: -dev
+            dockerfile: docker/Dockerfile
+            build-target: dev
+            platform: linux/arm64
+            runner: ["self-hosted", "arm64", "4-cores"]
 
           ########################################
           # FoundationDB images (FDB client library is only available for amd64)
@@ -78,6 +80,7 @@ jobs:
             dockerfile: docker/Dockerfile.fdb
             build-target: prod
             platform: linux/amd64
+            runner: ubuntu-latest-4-cores
           # Dev AMD64 image
           - job-name: FDB Dev AMD64
             image-suffix: -fdb
@@ -85,6 +88,7 @@ jobs:
             dockerfile: docker/Dockerfile.fdb
             build-target: dev
             platform: linux/amd64
+            runner: ubuntu-latest-4-cores
 
     steps:
       - name: Checkout
