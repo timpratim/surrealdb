@@ -167,7 +167,7 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surreal surreal-nightly.linux-amd64
+              docker cp binary:/surreal/target/release/surreal surreal-nightly.linux-amd64
 
           # Linux arm64
           # TODO: Run these in an arm64 runner, otherwise it takes too long
@@ -182,7 +182,7 @@ jobs:
           #       -f docker/Dockerfile.binary \
           #       .
           #     docker create --name binary binary
-          #     docker cp binary:/surreal surreal-nightly.linux-arm64
+          #     docker cp binary:/surreal/target/release/surreal surreal-nightly.linux-arm64
 
           # Windows amd64
           - arch: x86_64-pc-windows-msvc
@@ -190,7 +190,6 @@ jobs:
             file: surreal-nightly.windows-amd64
             build-step: |
               # Prepare deps
-              echo "C:\msys64\usr\bin;$Env:Path" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
               vcpkg integrate install
 
               # Build
