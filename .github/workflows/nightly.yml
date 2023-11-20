@@ -117,8 +117,6 @@ jobs:
   build:
     name: Build ${{ matrix.arch }}
     needs: [test, lint]
-    env:
-      cargo-extra-features: storage-tikv,http-compression
     strategy:
       fail-fast: false
       matrix:
@@ -132,7 +130,7 @@ jobs:
               brew install protobuf
 
               # Build
-              cargo build --features ${{ env.cargo-extra-features }} --release --locked --target x86_64-apple-darwin
+              cargo build --features storage-tikv,http-compression --release --locked --target x86_64-apple-darwin
 
               # Package
               cd target/x86_64-apple-darwin/release
@@ -149,7 +147,7 @@ jobs:
               brew install protobuf
 
               # Build
-              cargo build --features ${{ env.cargo-extra-features }} --release --locked --target aarch64-apple-darwin
+              cargo build --features storage-tikv,http-compression --release --locked --target aarch64-apple-darwin
 
               # Package
               cd target/aarch64-apple-darwin/release
@@ -162,7 +160,12 @@ jobs:
             runner: ubuntu-latest-16-cores
             file: surreal-nightly.linux-amd64
             build-step: |
-              docker build --platform linux/amd64 -t binary -f docker/Dockerfile.binary .
+              docker build \
+                --platform linux/amd64 \
+                --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
+                -t binary \
+                -f docker/Dockerfile.binary \
+                .
               docker create --name binary binary
               docker cp binary:/surreal surreal-nightly.linux-amd64
 
@@ -171,7 +174,12 @@ jobs:
             runner: ubuntu-latest-16-cores
             file: surreal-nightly.linux-arm64
             build-step: |
-              docker build --platform linux/arm64 -t binary -f docker/Dockerfile.binary .
+              docker build \
+                --platform linux/arm64 \
+                --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
+                -t binary \
+                -f docker/Dockerfile.binary \
+                .
               docker create --name binary binary
               docker cp binary:/surreal surreal-nightly.linux-arm64
 
@@ -185,7 +193,7 @@ jobs:
               vcpkg integrate install
 
               # Build
-              cargo build --features ${{ env.cargo-extra-features }} --release --locked --target x86_64-pc-windows-msvc
+              cargo build --features storage-tikv,http-compression --release --locked --target x86_64-pc-windows-msvc
 
               # Package
               cd target/x86_64-pc-windows-msvc/release
