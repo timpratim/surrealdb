@@ -168,7 +168,7 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surreal/target/release/surreal surreal-nightly.linux-amd64
+              docker cp binary:/surrealdb/target/release/surreal surreal-nightly.linux-amd64
 
           # Linux arm64
           - arch: aarch64-unknown-linux-gnu
@@ -182,7 +182,7 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surreal/target/release/surreal surreal-nightly.linux-arm64
+              docker cp binary:/surrealdb/target/release/surreal surreal-nightly.linux-arm64
 
           # Windows amd64
           - arch: x86_64-pc-windows-msvc
@@ -243,8 +243,7 @@ jobs:
       matrix:
         include:
           - file: surreal-nightly.linux-amd64
-          # TODO: Run these in an arm64 runner, otherwise it takes too long
-          # - file: surreal-nightly.linux-arm64
+          - file: surreal-nightly.linux-arm64
           - file: surreal-nightly.windows-amd64
           - file: surreal-nightly.darwin-amd64
           - file: surreal-nightly.darwin-arm64
