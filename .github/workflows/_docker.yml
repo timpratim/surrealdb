@@ -50,10 +50,11 @@ jobs:
             build-target: prod
             platform: linux/amd64
           # Prod ARM64 image
-          - job-name: Base Prod ARM64
-            dockerfile: docker/Dockerfile
-            build-target: prod
-            platform: linux/arm64
+          # TODO: Run these in an arm64 runner, otherwise it takes too long
+          # - job-name: Base Prod ARM64
+          #   dockerfile: docker/Dockerfile
+          #   build-target: prod
+          #   platform: linux/arm64
           # Dev AMD64 image
           - job-name: Base Dev AMD64
             tag-suffix: -dev
@@ -61,11 +62,12 @@ jobs:
             build-target: dev
             platform: linux/amd64
           # Dev ARM64 image
-          - job-name: Base Dev ARM64
-            tag-suffix: -dev
-            dockerfile: docker/Dockerfile
-            build-target: dev
-            platform: linux/arm64
+          # TODO: Run these in an arm64 runner, otherwise it takes too long
+          # - job-name: Base Dev ARM64
+          #   tag-suffix: -dev
+          #   dockerfile: docker/Dockerfile
+          #   build-target: dev
+          #   platform: linux/arm64
 
           ########################################
           # FoundationDB images (FDB client library is only available for amd64)
