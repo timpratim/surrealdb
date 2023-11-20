@@ -244,7 +244,8 @@ jobs:
       matrix:
         include:
           - file: surreal-nightly.linux-amd64
-          - file: surreal-nightly.linux-arm64
+          # TODO: Run these in an arm64 runner, otherwise it takes too long
+          # - file: surreal-nightly.linux-arm64
           - file: surreal-nightly.windows-amd64
           - file: surreal-nightly.darwin-amd64
           - file: surreal-nightly.darwin-arm64
