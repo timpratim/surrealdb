@@ -6,7 +6,7 @@ FROM cgr.dev/chainguard/rust:latest-dev as builder
 
 USER root
 RUN apk update
-RUN apk add patch clang curl gcc
+RUN apk add patch clang curl gcc g++ musl-dev
 
 RUN cargo install cargo-make
 
