@@ -13,6 +13,7 @@ defaults:
     shell: bash
 
 jobs:
+  # Build the Docker image but don't push it.
   docker:
     uses: ./.github/workflows/_docker.yml
     with:
