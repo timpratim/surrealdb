@@ -1,0 +1,348 @@
+run-name: Release version ${{ inputs.version }}
+
+on:
+  workflow_call:
+    inputs:
+      # i.e. nightly, 1.0.0
+      version:
+        required: false
+        type: string
+        default: "nightly"
+      publish:
+        required: false
+        type: boolean
+        default: false
+      docker-update-latest:
+        required: false
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest-16-cores
+    steps:
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.71.1
+
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -y update
+
+      - name: Free up some disk space
+        run: |
+          (set -x; df -h)
+          # Free up some disk space by removing unused files
+          (set -x; sudo rm -rf /imagegeneration || true)
+          (set -x; sudo rm -rf /opt/az || true)
+          (set -x; sudo rm -rf /opt/hostedtoolcache || true)
+          (set -x; sudo rm -rf /opt/google || true)
+          (set -x; sudo rm -rf /opt/pipx || true)
+          (set -x; df -h)
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Install cargo-make
+        run: cargo install --debug --locked cargo-make
+
+      - name: Test workspace + coverage
+        run: cargo make ci-workspace-coverage
+
+      - name: Debug info
+        if: always()
+        run: |
+          set -x
+          free -m
+          df -h
+          ps auxf
+          cat /tmp/surrealdb.log || true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: target/llvm-cov/html/
+          retention-days: 5
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest-16-cores
+    steps:
+
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -y update
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.71.1
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      - name: Install cargo-make
+        run: cargo install --debug --locked cargo-make
+
+      - name: Check workspace
+        run: cargo make ci-check
+
+      - name: Check format
+        run: cargo make ci-format
+
+      - name: Check wasm
+        run: cargo make ci-check-wasm
+
+      - name: Check clippy
+        run: cargo make ci-clippy
+
+  docker:
+    needs: [test, lint]
+    uses: ./.github/workflows/_docker.yml
+    with:
+      image-prefix: surrealdb
+      tag-prefix: ${{ inputs.version }}
+      publish: ${{ github.event.inputs.publish }}
+      update-latest: ${{ github.event.inputs.docker-update-latest == 'true' }}
+
+  build:
+    name: Build ${{ matrix.arch }}
+    needs: [test, lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # MacOS amd64
+          - arch: x86_64-apple-darwin
+            runner: macos-latest-xl
+            file: surreal-${{ inputs.version }}.darwin-amd64
+            build-step: |
+              # Prepare deps
+              brew install protobuf
+
+              # Build
+              cargo build --features storage-tikv,http-compression --release --locked --target x86_64-apple-darwin
+
+              # Package
+              cd target/x86_64-apple-darwin/release
+              chmod +x surreal
+              tar -zcvf surreal-${{ inputs.version }}.darwin-amd64.tgz surreal
+              echo $(shasum -a 256 surreal-${{ inputs.version }}.darwin-amd64.tgz | cut -f1 -d' ') > surreal-${{ inputs.version }}.darwin-amd64.txt
+
+          # MacOS arm64
+          - arch: aarch64-apple-darwin
+            runner: macos-latest-xl
+            file: surreal-${{ inputs.version }}.darwin-arm64
+            build-step: |
+              # Prepare deps
+              brew install protobuf
+
+              # Build
+              cargo build --features storage-tikv,http-compression --release --locked --target aarch64-apple-darwin
+
+              # Package
+              cd target/aarch64-apple-darwin/release
+              chmod +x surreal
+              tar -zcvf surreal-${{ inputs.version }}.darwin-arm64.tgz surreal
+              echo $(shasum -a 256 surreal-${{ inputs.version }}.darwin-arm64.tgz | cut -f1 -d' ') > surreal-${{ inputs.version }}.darwin-arm64.txt
+
+          # Linux amd64
+          - arch: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest-16-cores
+            file: surreal-${{ inputs.version }}.linux-amd64
+            build-step: |
+              docker build \
+                --platform linux/amd64 \
+                --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
+                -t binary \
+                -f docker/Dockerfile.binary \
+                .
+              docker create --name binary binary
+              docker cp binary:/surrealdb/target/release/surreal surreal-${{ inputs.version }}.linux-amd64
+
+          # Linux arm64
+          - arch: aarch64-unknown-linux-gnu
+            runner: ["self-hosted", "arm64", "4-cores"]
+            file: surreal-${{ inputs.version }}.linux-arm64
+            build-step: |
+              docker build \
+                --platform linux/arm64 \
+                --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
+                -t binary \
+                -f docker/Dockerfile.binary \
+                .
+              docker create --name binary binary
+              docker cp binary:/surrealdb/target/release/surreal surreal-${{ inputs.version }}.linux-arm64
+
+          # Windows amd64
+          - arch: x86_64-pc-windows-msvc
+            runner: windows-latest
+            file: surreal-${{ inputs.version }}.windows-amd64
+            build-step: |
+              # Prepare deps
+              vcpkg integrate install
+
+              # Build
+              cargo build --features storage-tikv,http-compression --release --locked --target x86_64-pc-windows-msvc
+
+              # Package
+              cd target/x86_64-pc-windows-msvc/release
+              cp surreal.exe surreal-${{ inputs.version }}.windows-amd64.exe
+              echo $(shasum -a 256 surreal-${{ inputs.version }}.windows-amd64.exe | cut -f1 -d' ') > surreal-${{ inputs.version }}.windows-amd64.txt
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: us-east-2
+          aws-access-key-id: ${{ secrets.AMAZON_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AMAZON_SECRET_KEY }}
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.71.1
+          targets: ${{ matrix.arch }}
+
+      - name: Output package versions
+        run: set -x; go version ; cargo version ; rustc --version ; cmake --version ; gcc --version ; g++ --version ; perl -v
+
+      - name: Build step
+        run: ${{ matrix.build-step }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.file }}
+          path: |
+            target/${{ matrix.arch }}/release/surreal
+            target/${{ matrix.arch }}/release/${{ matrix.file }}.tgz
+            target/${{ matrix.arch }}/release/${{ matrix.file }}.txt
+            target/${{ matrix.arch }}/release/${{ matrix.file }}.exe
+
+  publish:
+    name: Publish artifacts binaries
+    if: ${{ github.event.inputs.publish == 'true' }}
+    needs: [build, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.event.inputs.version != 'nightly' }}
+        with:
+          name: "Release ${{ github.ref_name }}"
+          files: |
+            LICENSE
+            artifacts/*.tgz
+            artifacts/*.exe
+
+      - name: Set version
+        if: ${{ github.event.inputs.version != 'nightly' }}
+        run: |
+          echo ${{ github.ref_name }} > latest.txt
+          # TODO: remove echo
+          echo aws s3 cp --cache-control 'no-store' latest.txt s3://download.surrealdb.com/latest.txt
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: us-east-2
+          aws-access-key-id: ${{ secrets.AMAZON_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AMAZON_SECRET_KEY }}
+
+      - name: Publish binaries
+        run: |
+          # TODO: remove echo
+          echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ inputs.version }}/
+
+  package-macos:
+    name: Package and publish macOS universal binary
+    needs: [publish]
+    runs-on: macos-latest
+    steps:
+      - name: Download amd64 binary
+        uses: actions/download-artifact@v3
+        with:
+          name: surreal-${{ inputs.version }}.darwin-amd64
+          path: amd64
+
+      - name: Download arm64 binary
+        uses: actions/download-artifact@v3
+        with:
+          name: surreal-${{ inputs.version }}.darwin-arm64
+          path: arm64
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: us-east-2
+          aws-access-key-id: ${{ secrets.AMAZON_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AMAZON_SECRET_KEY }}
+
+      - name: Package universal MacOS binary
+        run: |
+          FILE="surreal-${{ inputs.version }}.darwin-universal"
+          lipo -create -output surreal amd64/surreal arm64/surreal
+          chmod +x surreal
+          tar -zcvf $FILE.tgz surreal
+          echo $(shasum -a 256 $FILE.tgz | cut -f1 -d' ') > $FILE.txt
+
+      - name: Publish universal MacOS binary
+        if: ${{ github.event.inputs.publish == 'true' }}
+        run: |
+          # TODO: remove echo
+          echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ inputs.version }}/
+          echo aws s3 cp --cache-control 'no-store' $FILE.txt s3://download.surrealdb.com/${{ inputs.version }}/
+
+  propagate:
+    name: Propagate binaries to all regions
+    if: ${{ github.event.inputs.publish == 'true' }}
+    needs: [publish, package-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: us-east-2
+          aws-access-key-id: ${{ secrets.AMAZON_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AMAZON_SECRET_KEY }}
+
+      - name: Distribute binaries
+        run: |
+          regions=("af-south-1" "ap-east-1" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ca-central-1" "eu-central-1" "eu-west-2" "me-south-1" "sa-east-1" "us-west-2")
+          for region in ${regions[@]}; do
+              echo aws s3 sync --delete --storage-class INTELLIGENT_TIERING --source-region eu-west-2 --region ${region} s3://download.surrealdb.com s3://download.${region}.surrealdb.com
+          done

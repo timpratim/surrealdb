@@ -1,0 +1,24 @@
+name: Version release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*.*.*"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    uses: ./.github/workflows/_release.yml
+    with:
+      version: ${{ github.ref_name }}
+      publish: ${{ github.event.inputs.publish == 'true' || github.event_name == 'push' }}
+      docker-update-latest: true
