@@ -122,74 +122,75 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # MacOS amd64
-        - arch: x86_64-apple-darwin
-          runner: macos-latest-xl
-          file: surreal-nightly.darwin-amd64
-          build-step: |
-            # Prepare deps
-            brew install protobuf
+        include:
+          # MacOS amd64
+          - arch: x86_64-apple-darwin
+            runner: macos-latest-xl
+            file: surreal-nightly.darwin-amd64
+            build-step: |
+              # Prepare deps
+              brew install protobuf
 
-            # Build
-            cargo build --features ${{ env.cargo-extra-features }} --release --locked --target x86_64-apple-darwin
+              # Build
+              cargo build --features ${{ env.cargo-extra-features }} --release --locked --target x86_64-apple-darwin
 
-            # Package
-            cd target/x86_64-apple-darwin/release
-            chmod +x surreal
-            tar -zcvf surreal-nightly.darwin-amd64.tgz surreal
-            echo $(shasum -a 256 surreal-nightly.darwin-amd64.tgz | cut -f1 -d' ') > surreal-nightly.darwin-amd64.txt
+              # Package
+              cd target/x86_64-apple-darwin/release
+              chmod +x surreal
+              tar -zcvf surreal-nightly.darwin-amd64.tgz surreal
+              echo $(shasum -a 256 surreal-nightly.darwin-amd64.tgz | cut -f1 -d' ') > surreal-nightly.darwin-amd64.txt
 
-        # MacOS arm64
-        - arch: aarch64-apple-darwin
-          runner: macos-latest-xl
-          file: surreal-nightly.darwin-arm64
-          build-step: |
-            # Prepare deps
-            brew install protobuf
+          # MacOS arm64
+          - arch: aarch64-apple-darwin
+            runner: macos-latest-xl
+            file: surreal-nightly.darwin-arm64
+            build-step: |
+              # Prepare deps
+              brew install protobuf
 
-            # Build
-            cargo build --features ${{ env.cargo-extra-features }} --release --locked --target aarch64-apple-darwin
+              # Build
+              cargo build --features ${{ env.cargo-extra-features }} --release --locked --target aarch64-apple-darwin
 
-            # Package
-            cd target/aarch64-apple-darwin/release
-            chmod +x surreal
-            tar -zcvf surreal-nightly.darwin-arm64.tgz surreal
-            echo $(shasum -a 256 surreal-nightly.darwin-arm64.tgz | cut -f1 -d' ') > surreal-nightly.darwin-arm64.txt
+              # Package
+              cd target/aarch64-apple-darwin/release
+              chmod +x surreal
+              tar -zcvf surreal-nightly.darwin-arm64.tgz surreal
+              echo $(shasum -a 256 surreal-nightly.darwin-arm64.tgz | cut -f1 -d' ') > surreal-nightly.darwin-arm64.txt
 
-        # Linux amd64
-        - arch: x86_64-unknown-linux-gnu
-          runner: ubuntu-latest-16-cores
-          file: surreal-nightly.linux-amd64
-          build-step: |
-            docker build --platform linux/amd64 -t binary -f docker/Dockerfile.binary .
-            docker create --name binary binary
-            docker cp binary:/surreal surreal-nightly.linux-amd64
+          # Linux amd64
+          - arch: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest-16-cores
+            file: surreal-nightly.linux-amd64
+            build-step: |
+              docker build --platform linux/amd64 -t binary -f docker/Dockerfile.binary .
+              docker create --name binary binary
+              docker cp binary:/surreal surreal-nightly.linux-amd64
 
-        # Linux arm64
-        - arch: aarch64-unknown-linux-gnu
-          runner: ubuntu-latest-16-cores
-          file: surreal-nightly.linux-arm64
-          build-step: |
-            docker build --platform linux/arm64 -t binary -f docker/Dockerfile.binary .
-            docker create --name binary binary
-            docker cp binary:/surreal surreal-nightly.linux-arm64
+          # Linux arm64
+          - arch: aarch64-unknown-linux-gnu
+            runner: ubuntu-latest-16-cores
+            file: surreal-nightly.linux-arm64
+            build-step: |
+              docker build --platform linux/arm64 -t binary -f docker/Dockerfile.binary .
+              docker create --name binary binary
+              docker cp binary:/surreal surreal-nightly.linux-arm64
 
-        # Windows amd64
-        - arch: x86_64-pc-windows-msvc
-          runner: windows-latest
-          file: surreal-nightly.windows-amd64
-          build-step: |
-            # Prepare deps
-            echo "C:\msys64\usr\bin;$Env:Path" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-            vcpkg integrate install
+          # Windows amd64
+          - arch: x86_64-pc-windows-msvc
+            runner: windows-latest
+            file: surreal-nightly.windows-amd64
+            build-step: |
+              # Prepare deps
+              echo "C:\msys64\usr\bin;$Env:Path" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+              vcpkg integrate install
 
-            # Build
-            cargo build --features ${{ env.cargo-extra-features }} --release --locked --target x86_64-pc-windows-msvc
+              # Build
+              cargo build --features ${{ env.cargo-extra-features }} --release --locked --target x86_64-pc-windows-msvc
 
-            # Package
-            cd target/x86_64-pc-windows-msvc/release
-            cp surreal.exe surreal-nightly.windows-amd64.exe
-            echo $(shasum -a 256 surreal-nightly.windows-amd64.exe | cut -f1 -d' ') > surreal-nightly.windows-amd64.txt
+              # Package
+              cd target/x86_64-pc-windows-msvc/release
+              cp surreal.exe surreal-nightly.windows-amd64.exe
+              echo $(shasum -a 256 surreal-nightly.windows-amd64.exe | cut -f1 -d' ') > surreal-nightly.windows-amd64.txt
 
     runs-on: ${{ matrix.runner }}
     steps:
