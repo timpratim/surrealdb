@@ -135,6 +135,7 @@ jobs:
       tag-prefix: ${{ env.NAME }}
       build: true
       publish: false
+    secrets: inherit
 
   build:
     name: Build ${{ matrix.arch }} binary
@@ -302,6 +303,7 @@ jobs:
       latest: ${{ env.LATEST }}
       build: false
       publish: true
+    secrets: inherit
 
   package-macos:
     name: Package and publish macOS universal binary
