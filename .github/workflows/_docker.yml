@@ -36,6 +36,10 @@ on:
         required: false
       DOCKER_PASS:
         required: false
+      AWS_CI_ACCESS_KEY_ID:
+        required: true
+      AWS_CI_SECRET_ACCESS_KEY:
+        required: true
 
 defaults:
   run:
