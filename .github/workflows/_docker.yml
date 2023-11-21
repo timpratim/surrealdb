@@ -102,7 +102,7 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           
   build:
-    name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ build-target }}, ${{ matrix.platform }})
+    name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     needs: prepare
     if: ${{ inputs.build }}
