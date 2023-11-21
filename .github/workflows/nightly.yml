@@ -20,23 +20,19 @@ defaults:
   run:
     shell: bash
 
-env:
-  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
-  PUBLISH: ${{ github.event.inputs.publish == 'true' || github.event_name == 'schedule' }}
-
 jobs:
   release:
     uses: ./.github/workflows/_publish_version.yml
     with:
       name: nightly
-      git_ref: ${{ env.GIT_REF }}
-      publish: ${{ env.PUBLISH }}
+      git_ref: ${{ github.event.inputs.git_ref || github.ref_name }}
+      publish: ${{ github.event.inputs.publish == 'true' || github.event_name == 'schedule' }}
     secrets: inherit
 
   # crate:
   #   name: Publish surrealdb-nightly to crates.io
   #   needs: [release]
-  #   if: ${{ env.PUBLISH == 'true' }}
+  #   if: ${{ github.event.inputs.publish == 'true' || github.event_name == 'schedule' }}
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Install stable toolchain
@@ -47,7 +43,7 @@ jobs:
   #     - name: Checkout sources
   #       uses: actions/checkout@v4
   #       with:
-  #         ref: ${{ env.GIT_REF }}
+  #         ref: ${{ github.event.inputs.git_ref || github.ref_name }}
 
   #     - name: Publish
   #       env:

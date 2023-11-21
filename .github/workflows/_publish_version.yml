@@ -30,9 +30,9 @@ env:
   GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
   # If the name is not provided, use the git_ref (i.e. v1.0.0)
   NAME: ${{ github.event.inputs.name || env.GIT_REF }}
-  PUBLISH: ${{ github.event.inputs.publish == 'true' }}
-  LATEST: ${{ github.event.inputs.latest == 'true' }}
-  CREATE_RELEASE: ${{ github.event.inputs.create-release == 'true' }}
+  PUBLISH: ${{ github.event.inputs.publish }}
+  LATEST: ${{ github.event.inputs.latest }}
+  CREATE_RELEASE: ${{ github.event.inputs.create-release }}
   ENV_NAME: ${{ env.NAME == 'nightly' && 'nightly' || 'release' }}
 
 defaults:
@@ -253,7 +253,7 @@ jobs:
   publish:
     name: Publish artifacts binaries
     needs: [test, lint, build, docker]
-    if: ${{ env.PUBLISH == 'true' }}
+    if: ${{ env.PUBLISH }}
     environment: ${{ env.ENV_NAME }}
     runs-on: ubuntu-latest
     steps:
@@ -265,15 +265,15 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v3
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v1
-        if: ${{ env.CREATE_RELEASE }}
-        with:
-          name: "Release ${{ github.ref_name }}"
-          files: |
-            LICENSE
-            artifacts/*.tgz
-            artifacts/*.exe
+      # - name: Publish release
+      #   uses: softprops/action-gh-release@v1
+      #   if: ${{ env.CREATE_RELEASE }}
+      #   with:
+      #     name: "Release ${{ github.ref_name }}"
+      #     files: |
+      #       LICENSE
+      #       artifacts/*.tgz
+      #       artifacts/*.exe
 
       - name: Set latest version
         if: ${{ env.CREATE_RELEASE }}
@@ -338,7 +338,7 @@ jobs:
           echo $(shasum -a 256 $FILE.tgz | cut -f1 -d' ') > $FILE.txt
 
       - name: Publish universal MacOS binary
-        if: ${{ github.event.inputs.publish == 'true' }}
+        if: ${{ github.event.inputs.publish }}
         run: |
           # TODO: remove echo
           echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ env.NAME }}/

@@ -28,17 +28,18 @@ defaults:
 
 env:
   GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
-  LATEST: ${{ env.PUBLISH == 'true' && github.event.inputs.latest == 'true' }}
-  PUBLISH: ${{ github.event.inputs.publish == 'true' || github.event_name == 'push' }}
+  PUBLISH: ${{ github.event.inputs.publish || github.event_name == 'push' }}
 
 jobs:
   checks:
     name: Pre-release checks
     id: checks
     runs-on: ubuntu-latest
+    env:
+      GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
     steps:
       - name: Verify that the provided git_ref is a tag when 'publish' is true
-        if: ${{ github.event.inputs.publish == 'true' }}
+        if: ${{ github.event.inputs.publish }}
         run: |
           git tag -l | grep -w $GIT_REF || (echo "The provided git_ref '$GIT_REF' is not a tag" && exit 1)
 
@@ -46,8 +47,8 @@ jobs:
     needs: [checks]
     uses: ./.github/workflows/_publish_version.yml
     with:
-      git_ref: ${{ env.GIT_REF }}
-      latest: ${{ env.LATEST }}
-      publish: ${{ env.PUBLISH }}
-      create-release: ${{ env.PUBLISH }}
+      git_ref: ${{ github.event.inputs.git_ref || github.ref_name }}
+      latest: ${{ github.event.inputs.latest }}
+      publish: ${{ github.event.inputs.publish || github.event_name == 'push' }}
+      create-release: ${{ github.event.inputs.publish || github.event_name == 'push' }}
     secrets: inherit
