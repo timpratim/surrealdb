@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag-prefix: ${{ steps.tag-prefix.outputs.tag-prefix }}
-      matrix: ${{ toJson(steps.set-matrix.outputs.matrix) }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Sanitize tag name
         id: tag-prefix
@@ -97,7 +97,7 @@ jobs:
                 tag-suffix: -dev
         run: |
           echo '${{ env.MATRIX }}' > matrix.yaml
-          echo "matrix='$(yq -o json -I=0 matrix.yaml)'" >> $GITHUB_OUTPUT
+          echo "matrix=$(yq -o json -I=0 matrix.yaml)" >> $GITHUB_OUTPUT
           
   build:
     name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
