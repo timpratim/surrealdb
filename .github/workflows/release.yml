@@ -39,7 +39,7 @@ jobs:
       GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
     steps:
       - name: Verify that the provided git_ref is a tag when 'publish' is true
-        if: ${{ github.event.inputs.publish }}
+        if: ${{ env.PUBLISH }}
         run: |
           git tag -l | grep -w $GIT_REF || (echo "The provided git_ref '$GIT_REF' is not a tag" && exit 1)
 
