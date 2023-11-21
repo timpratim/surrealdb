@@ -27,9 +27,9 @@ on:
         description: "Create a GitHub release"
 
 env:
-  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
   # If the name is not provided, use the git_ref (i.e. v1.0.0)
-  NAME: ${{ github.event.inputs.name || env.GIT_REF }}
+  NAME: ${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}
+  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
   PUBLISH: ${{ github.event.inputs.publish }}
   LATEST: ${{ github.event.inputs.latest }}
   CREATE_RELEASE: ${{ github.event.inputs.create-release }}
