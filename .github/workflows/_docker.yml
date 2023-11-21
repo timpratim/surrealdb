@@ -47,24 +47,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag-prefix: ${{ steps.tag-prefix.outputs.tag-prefix }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Sanitize tag name
         id: tag-prefix
         run: |
           echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]') >> $GITHUB_OUTPUT
-          
-  build:
-    name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ build-target }}, ${{ matrix.platform }})
-    runs-on: ${{ matrix.runner }}
-    needs: prepare
-    if: ${{ inputs.build }}
-    env:
-      DOCKER_IMAGE_REPO: ${{ inputs.image-prefix }}${{ matrix.image-suffix }} # i.e. surrealdb/...
-      DOCKER_IMAGE_TAG: ${{ needs.prepare.outputs.tag-prefix }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
+      
+      # Define it here so we don't need to duplicate the content in the build and push jobs
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          MATRIX=$(cat <<-END
+          include:
           ########################################
           # Base images
           ########################################
@@ -100,6 +95,23 @@ jobs:
           # Dev AMD64 image
           - <<: *fdb_image
             tag-suffix: -dev
+          END
+          )
+
+          MATRIX_JSON=$(echo "$MATRIX" | yq r -j -)
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          
+  build:
+    name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ build-target }}, ${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    needs: prepare
+    if: ${{ inputs.build }}
+    env:
+      DOCKER_IMAGE_REPO: ${{ inputs.image-prefix }}${{ matrix.image-suffix }} # i.e. surrealdb/...
+      DOCKER_IMAGE_TAG: ${{ needs.prepare.outputs.tag-prefix }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -172,43 +184,7 @@ jobs:
       DOCKER_IMAGE_TAG_LATEST: latest${{ matrix.tag-suffix }} # i.e. .../latest-dev
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          ########################################
-          # Base images
-          ########################################
-          # Prod AMD64 image
-          - &base_image
-            dockerfile: docker/Dockerfile
-            build-target: prod
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Prod ARM64 image
-          - <<: *base_image
-            platform: linux/arm64
-            runner: ["self-hosted", "arm64", "4-cores"]
-          # Dev AMD64 image
-          - <<: *base_image
-            tag-suffix: -dev
-          # Dev ARM64 image
-          - <<: *base_image
-            tag-suffix: -dev
-            platform: linux/arm64
-            runner: ["self-hosted", "arm64", "4-cores"]
-
-          ########################################
-          # FoundationDB images (FDB client library is only available for amd64)
-          ########################################
-          # Prod AMD64 image
-          - &fdb_image
-            image-suffix: -fdb
-            dockerfile: docker/Dockerfile.fdb
-            build-target: prod
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Dev AMD64 image
-          - <<: *fdb_image
-            tag-suffix: -dev
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
