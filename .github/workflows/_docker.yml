@@ -56,6 +56,10 @@ jobs:
       - name: Sanitize tag name
         id: tag-prefix
         run: |
+          set -x
+          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}')"
+          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g')"
+          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]')"
           echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       
       # Define it here so we don't need to duplicate the content in the build and push jobs

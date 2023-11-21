@@ -6,7 +6,7 @@ on:
         required: false
         type: string
         description: "The name of this release version. It can be a 'nightly' version or a semver version that represents a tag (i.e. 'v1.0.0')"
-      git_ref:
+      git-ref:
         required: true
         type: string
         description: "The git ref of this release version. All 'actions/checkout' steps will use it"
@@ -38,9 +38,9 @@ jobs:
       - name: Set outputs
         id: outputs
         run: |
-          echo "git-ref=${{ github.event.inputs.git_ref || github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "git-ref=${{ github.event.inputs.git-ref || github.ref_name }}" >> $GITHUB_OUTPUT
           # If the name is not provided, use the git_ref (i.e. v1.0.0)
-          echo "name=${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "name=${{ github.event.inputs.name || github.event.inputs.git-ref || github.ref_name }}" >> $GITHUB_OUTPUT
   test:
     name: Test
     runs-on: ubuntu-latest-16-cores

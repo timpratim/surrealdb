@@ -1,11 +1,11 @@
 name: Release
 
-run-name: "Manual release '${{ inputs.git_ref }}' (publish: ${{ inputs.publish }}, latest: ${{ inputs.latest }})"
+run-name: "Manual release '${{ inputs.git-ref }}' (publish: ${{ inputs.publish }}, latest: ${{ inputs.latest }})"
 
 on:
   workflow_dispatch:
     inputs:
-      git_ref:
+      git-ref:
         required: true
         type: string
         description: "The github ref of this release. If you are publishing it, use a tag (i.e. v1.0.0)."
@@ -29,7 +29,7 @@ defaults:
     shell: bash
 
 env:
-  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
+  GIT_REF: ${{ github.event.inputs.git-ref || github.ref_name }}
   PUBLISH: ${{ github.event.inputs.publish || github.event_name == 'push' }}
 
 jobs:
@@ -37,8 +37,6 @@ jobs:
     name: Pre-release checks
     id: checks
     runs-on: ubuntu-latest
-    env:
-      GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
     steps:
       - name: Verify that the provided git_ref is a tag when 'publish' is true
         if: ${{ env.PUBLISH }}
@@ -49,7 +47,7 @@ jobs:
     needs: [checks]
     uses: ./.github/workflows/_publish_version.yml
     with:
-      git_ref: ${{ github.event.inputs.git_ref || github.ref_name }}
+      git-ref: ${{ github.event.inputs.git-ref || github.ref_name }}
       latest: ${{ github.event.inputs.latest }}
       publish: ${{ github.event.inputs.publish || github.event_name == 'push' }}
       create-release: ${{ github.event.inputs.publish || github.event_name == 'push' }}
