@@ -134,8 +134,6 @@ jobs:
 
       - name: Build the Docker image
         id: build
-        outputs:
-          ecr-image: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
         run: |
           ECR_IMAGE=${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
 
@@ -147,6 +145,8 @@ jobs:
             --target ${{ matrix.build-target }} \
             --tag $ECR_IMAGE \
             .
+          
+          echo "ecr-image=$ECR_IMAGE" >> $GITHUB_OUTPUT
 
       # Start the docker image as server and wait until it is ready
       - name: Test the Docker image
