@@ -97,7 +97,7 @@ jobs:
                 tag-suffix: -dev
         run: |
           echo '${{ env.MATRIX }}' > matrix.yaml
-          echo "matrix=$(yq -o json matrix.yaml)" >> $GITHUB_OUTPUT
+          echo "matrix='$(yq -o json -I=0 matrix.yaml)'" >> $GITHUB_OUTPUT
           
   build:
     name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
