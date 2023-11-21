@@ -303,6 +303,7 @@ jobs:
     needs: [publish, prepare-vars]
     uses: ./.github/workflows/_docker.yml
     with:
+      git-ref: ${{ needs.prepare-vars.outputs.git-ref }}
       image-prefix: surrealdb
       tag-prefix: ${{ needs.prepare-vars.outputs.name }}
       latest: ${{ github.event.inputs.latest }}
