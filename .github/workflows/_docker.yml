@@ -3,23 +3,34 @@ name: Docker
 on:
   workflow_call:
     inputs:
+      git_ref:
+        required: true
+        type: string
+        description: "The github ref to checkout for building the Docker images."
       image-prefix:
         required: false
         type: string
         default: surrealdb
-      # i.e. nightly, 1.0.0
+        description: "The prefix of the Docker image name. i.e. 'surrealdb' for 'surrealdb/surrealdb'."
       tag-prefix:
         required: true
         type: string
+        description: "The prefix of the Docker image tag. i.e. 'nightly' for 'surrealdb/surrealdb:nightly-dev' or 'surrealdb/surrealdb:nightly-fdb'."
+      build:
+        required: false
+        type: boolean
+        default: true
+        description: "Build the Docker images."
       publish:
         required: false
         type: boolean
         default: false
-      # Use it when a new release is pushed. Not for nightly builds.
+        description: "Publish the Docker images."
       update-latest:
         required: false
         type: boolean
         default: false
+        description: "Update the latest tag of the Docker image."
     secrets:
       DOCKER_USER:
         required: false
@@ -30,100 +41,118 @@ defaults:
   run:
     shell: bash
 
+env:
+  GIT_REF: ${{ github.event.inputs.git_ref }}
+  IMAGE_PREFIX: ${{ inputs.image-prefix }}
+  TAG_PREFIX: ${{ inputs.tag-prefix }}
+  BUILD: ${{ inputs.build }}
+  PUBLISH: ${{ inputs.publish }}
+  UPDATE_LATEST: ${{ inputs.update-latest }}
+  MATRIX:
+    include:
+      ########################################
+      # Base images
+      ########################################
+      # Prod AMD64 image
+      - job-name: Base Prod AMD64
+        dockerfile: docker/Dockerfile
+        build-target: prod
+        platform: linux/amd64
+        runner: ubuntu-latest-4-cores
+      # Prod ARM64 image
+      - job-name: Base Prod ARM64
+        dockerfile: docker/Dockerfile
+        build-target: prod
+        platform: linux/arm64
+        runner: ["self-hosted", "arm64", "4-cores"]
+      # Dev AMD64 image
+      - job-name: Base Dev AMD64
+        tag-suffix: -dev
+        dockerfile: docker/Dockerfile
+        build-target: dev
+        platform: linux/amd64
+        runner: ubuntu-latest-4-cores
+      # Dev ARM64 image
+      - job-name: Base Dev ARM64
+        tag-suffix: -dev
+        dockerfile: docker/Dockerfile
+        build-target: dev
+        platform: linux/arm64
+        runner: ["self-hosted", "arm64", "4-cores"]
+
+      ########################################
+      # FoundationDB images (FDB client library is only available for amd64)
+      ########################################
+      # Prod AMD64 image
+      - job-name: FDB Prod AMD64
+        image-suffix: -fdb
+        dockerfile: docker/Dockerfile.fdb
+        build-target: prod
+        platform: linux/amd64
+        runner: ubuntu-latest-4-cores
+      # Dev AMD64 image
+      - job-name: FDB Dev AMD64
+        image-suffix: -fdb
+        tag-suffix: -dev
+        dockerfile: docker/Dockerfile.fdb
+        build-target: dev
+        platform: linux/amd64
+        runner: ubuntu-latest-4-cores
+
 jobs:
-  docker:
-    name: ${{ matrix.job-name }}
+  build:
+    name: Build ${{ matrix.job-name }}
     runs-on: ${{ matrix.runner }}
+    if: ${{ env.BUILD }}
     env:
-      docker-tag-current: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:${{ inputs.tag-prefix }}${{ matrix.tag-suffix }}
-      docker-tag-latest: surrealdb/${{ inputs.image-prefix }}${{ matrix.image-suffix }}:latest${{ matrix.tag-suffix }}
+      DOCKER_IMAGE_REPO: ${{ env.IMAGE_PREFIX }}${{ matrix.image-suffix }} # i.e. surrealdb/...
+      DOCKER_IMAGE_TAG: ${{ env.TAG_PREFIX }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          ########################################
-          # Base images
-          ########################################
-          # Prod AMD64 image
-          - job-name: Base Prod AMD64
-            dockerfile: docker/Dockerfile
-            build-target: prod
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Prod ARM64 image
-          - job-name: Base Prod ARM64
-            dockerfile: docker/Dockerfile
-            build-target: prod
-            platform: linux/arm64
-            runner: ["self-hosted", "arm64", "4-cores"]
-          # Dev AMD64 image
-          - job-name: Base Dev AMD64
-            tag-suffix: -dev
-            dockerfile: docker/Dockerfile
-            build-target: dev
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Dev ARM64 image
-          - job-name: Base Dev ARM64
-            tag-suffix: -dev
-            dockerfile: docker/Dockerfile
-            build-target: dev
-            platform: linux/arm64
-            runner: ["self-hosted", "arm64", "4-cores"]
-
-          ########################################
-          # FoundationDB images (FDB client library is only available for amd64)
-          ########################################
-          # Prod AMD64 image
-          - job-name: FDB Prod AMD64
-            image-suffix: -fdb
-            dockerfile: docker/Dockerfile.fdb
-            build-target: prod
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Dev AMD64 image
-          - job-name: FDB Dev AMD64
-            image-suffix: -fdb
-            tag-suffix: -dev
-            dockerfile: docker/Dockerfile.fdb
-            build-target: dev
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-
+      matrix: ${{ fromJson(env.MATRIX) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Configure DockerHub
-        uses: docker/login-action@v2
-        if: ${{ inputs.publish == 'true' }}
         with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASS }}
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v2
+          ref: ${{ env.GIT_REF }}
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build the Docker image
-        uses: docker/build-push-action@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          context: .
-          load: true
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.build-target }}
-          platforms: ${{ matrix.platform }}
-          tags: ${{ env.docker-tag-current }}
+          aws-access-key-id: ${{ secrets.AWS_CI_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_CI_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build the Docker image
+        id: build
+        outputs:
+          ecr-image: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+        run: |
+          ECR_IMAGE=${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
+            --cache-from type=registry,ref=$ECR_IMAGE \
+            --cache-to type=inline \
+            --file ${{ matrix.dockerfile }} \
+            --target ${{ matrix.build-target }} \
+            --tag $ECR_IMAGE \
+            .
 
       # Start the docker image as server and wait until it is ready
       - name: Test the Docker image
         run: |
-          docker run --net=host --rm ${{ env.docker-tag-current }} start 2>&1 >surreal.log &
+          docker run --net=host --rm ${{ steps.build.outputs.ecr-image }} start 2>&1 >surreal.log &
 
           retries=5
-          until docker run --net=host --rm ${{ env.docker-tag-current }} is-ready; do
+          until docker run --net=host --rm ${{ steps.build.outputs.ecr-image }} is-ready; do
             retries=$((retries-1))
             if [[ $retries -eq 0 ]]; then
               echo "###"
@@ -137,27 +166,57 @@ jobs:
             fi
             sleep 1
           done
+      
+      - name: Push to CI ECR only so we can use it in other jobs
+        run: |
+          docker push ${{ steps.build.outputs.ecr-image }}
+
+  push:
+    name: Push ${{ matrix.job-name }}
+    runs-on: ${{ matrix.runner }}
+    if: ${{ env.PUBLISH }}
+    env:
+      DOCKER_IMAGE_REPO: ${{ env.IMAGE_PREFIX }}${{ matrix.image-suffix }} # i.e. surrealdb/...
+      DOCKER_IMAGE_TAG_CURRENT: ${{ env.TAG_PREFIX }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
+      DOCKER_IMAGE_TAG_LATEST: latest${{ matrix.tag-suffix }} # i.e. .../latest-dev
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(env.MATRIX) }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CI_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_CI_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Configure DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
 
       # This second build reuses the cache from the build above
       - name: Push the Docker image
-        uses: docker/build-push-action@v4
-        if: ${{ inputs.publish == 'true' }}
-        with:
-          context: .
-          push: true
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.build-target }}
-          platforms: ${{ matrix.platform }}
-          tags: ${{ env.docker-tag-current }}
+        env:
+          ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
+          DOCKER_IMAGE_CURRENT: docker.io/surrealdb/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
+        run: |
+          echo docker pull ${{ env.ECR_IMAGE }}
+          echo docker tag ${{ env.ECR_IMAGE }} ${{ env.DOCKER_IMAGE_CURRENT }}
+          echo docker push ${{ env.DOCKER_IMAGE_CURRENT }}
       
       # Push the prod image as latest if this workflow is meant to update the latest tag
-      - name: Push the Docker image and tag it as latest
-        uses: docker/build-push-action@v4
-        if: ${{ inputs.publish == 'true' && inputs.update-latest == 'true' }}
-        with:
-          context: .
-          push: true
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.build-target }}
-          platforms: ${{ matrix.platform }}
-          tags: ${{ env.docker-tag-latest }}
+      - name: Push the Docker image with tag 'latest'
+        if: ${{ env.UPDATE_LATEST }}
+        env:
+          ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
+          DOCKER_IMAGE_LATEST: docker.io/surrealdb/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_LATEST }}
+        run: |
+          echo docker pull ${{ env.ECR_IMAGE }}
+          echo docker tag ${{ env.ECR_IMAGE }} ${{ env.DOCKER_IMAGE_LATEST }}
+          echo docker push ${{ env.DOCKER_IMAGE_LATEST }}

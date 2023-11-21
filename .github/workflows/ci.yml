@@ -19,6 +19,7 @@ jobs:
     with:
       image-prefix: surrealdb-ci
       tag-prefix: ${{ github.sha }}
+      build: true
 
   format:
     name: Check format

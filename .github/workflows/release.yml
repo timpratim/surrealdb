@@ -1,0 +1,52 @@
+run-name: "Manual release '${{ inputs.git_ref }}' (publish: ${{ inputs.publish }}, latest: ${{ inputs.latest }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        required: true
+        type: string
+        description: "The github ref of this release. If you are publishing it, use a tag (i.e. v1.0.0)."
+        default: main
+      latest:
+        required: false
+        type: boolean
+        default: false
+        description: "Consider this release as the latest one and update the Docker image tag and the binary pointer for the installers"
+      publish:
+        required: false
+        type: boolean
+        default: false
+        description: "Publish the release"
+  push:
+    tags:
+      - "v*.*.*"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
+  LATEST: ${{ env.PUBLISH == 'true' && github.event.inputs.latest == 'true' }}
+  PUBLISH: ${{ github.event.inputs.publish == 'true' || github.event_name == 'push' }}
+
+jobs:
+  checks:
+    name: Pre-release checks
+    id: checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify that the provided git_ref is a tag when 'publish' is true
+        if: ${{ github.event.inputs.publish == 'true' }}
+        run: |
+          git tag -l | grep -w $GIT_REF || (echo "The provided git_ref '$GIT_REF' is not a tag" && exit 1)
+
+  release:
+    needs: [checks]
+    uses: ./.github/workflows/_publish_version.yml
+    with:
+      git_ref: ${{ env.GIT_REF }}
+      latest: ${{ env.LATEST }}
+      publish: ${{ env.PUBLISH }}
+      create-release: ${{ env.PUBLISH }}

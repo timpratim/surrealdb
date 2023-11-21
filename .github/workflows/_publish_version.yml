@@ -1,21 +1,39 @@
-run-name: Release version ${{ inputs.version }}
-
 on:
   workflow_call:
     inputs:
       # i.e. nightly, 1.0.0
-      version:
+      name:
         required: false
         type: string
-        default: "nightly"
+        description: "The name of this release version. It can be a 'nightly' version or a semver version that represents a tag (i.e. 'v1.0.0')"
+      git_ref:
+        required: true
+        type: string
+        description: "The git ref of this release version. All 'actions/checkout' steps will use it"
+      latest:
+        required: false
+        type: boolean
+        default: false
+        description: "Consider this release as the latest one and update the Docker image tag and the binary pointer for the installers"
       publish:
         required: false
         type: boolean
         default: false
-      docker-update-latest:
+        description: "Whether to publish this release"
+      create-release:
         required: false
         type: boolean
         default: false
+        description: "Create a GitHub release"
+
+env:
+  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
+  # If the name is not provided, use the git_ref (i.e. v1.0.0)
+  NAME: ${{ github.event.inputs.name || env.GIT_REF }}
+  PUBLISH: ${{ github.event.inputs.publish == 'true' }}
+  LATEST: ${{ github.event.inputs.latest == 'true' }}
+  CREATE_RELEASE: ${{ github.event.inputs.create-release == 'true' }}
+  ENV_NAME: ${{ env.NAME == 'nightly' && 'nightly' || 'release' }}
 
 defaults:
   run:
@@ -26,7 +44,6 @@ jobs:
     name: Test
     runs-on: ubuntu-latest-16-cores
     steps:
-
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -34,15 +51,13 @@ jobs:
 
       - name: Checkout sources
         uses: actions/checkout@v3
+        with:
+          ref: ${{ env.GIT_REF }}
 
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
         with:
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get -y update
+          save-if: ${{ env.GIT_REF == 'main' }}
 
       - name: Free up some disk space
         run: |
@@ -87,10 +102,8 @@ jobs:
 
       - name: Checkout sources
         uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get -y update
+        with:
+          ref: ${{ env.GIT_REF }}
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -114,18 +127,15 @@ jobs:
       - name: Check clippy
         run: cargo make ci-clippy
 
-  docker:
-    needs: [test, lint]
+  docker-build:
     uses: ./.github/workflows/_docker.yml
     with:
       image-prefix: surrealdb
-      tag-prefix: ${{ inputs.version }}
-      publish: ${{ github.event.inputs.publish }}
-      update-latest: ${{ github.event.inputs.docker-update-latest == 'true' }}
+      tag-prefix: ${{ env.NAME }}
+      build: ${{ env.PUBLISH }}
 
   build:
-    name: Build ${{ matrix.arch }}
-    needs: [test, lint]
+    name: Build ${{ matrix.arch }} binary
     strategy:
       fail-fast: false
       matrix:
@@ -133,7 +143,7 @@ jobs:
           # MacOS amd64
           - arch: x86_64-apple-darwin
             runner: macos-latest-xl
-            file: surreal-${{ inputs.version }}.darwin-amd64
+            file: surreal-${{ env.NAME }}.darwin-amd64
             build-step: |
               # Prepare deps
               brew install protobuf
@@ -144,13 +154,13 @@ jobs:
               # Package
               cd target/x86_64-apple-darwin/release
               chmod +x surreal
-              tar -zcvf surreal-${{ inputs.version }}.darwin-amd64.tgz surreal
-              echo $(shasum -a 256 surreal-${{ inputs.version }}.darwin-amd64.tgz | cut -f1 -d' ') > surreal-${{ inputs.version }}.darwin-amd64.txt
+              tar -zcvf surreal-${{ env.NAME }}.darwin-amd64.tgz surreal
+              echo $(shasum -a 256 surreal-${{ env.NAME }}.darwin-amd64.tgz | cut -f1 -d' ') > surreal-${{ env.NAME }}.darwin-amd64.txt
 
           # MacOS arm64
           - arch: aarch64-apple-darwin
             runner: macos-latest-xl
-            file: surreal-${{ inputs.version }}.darwin-arm64
+            file: surreal-${{ env.NAME }}.darwin-arm64
             build-step: |
               # Prepare deps
               brew install protobuf
@@ -161,13 +171,13 @@ jobs:
               # Package
               cd target/aarch64-apple-darwin/release
               chmod +x surreal
-              tar -zcvf surreal-${{ inputs.version }}.darwin-arm64.tgz surreal
-              echo $(shasum -a 256 surreal-${{ inputs.version }}.darwin-arm64.tgz | cut -f1 -d' ') > surreal-${{ inputs.version }}.darwin-arm64.txt
+              tar -zcvf surreal-${{ env.NAME }}.darwin-arm64.tgz surreal
+              echo $(shasum -a 256 surreal-${{ env.NAME }}.darwin-arm64.tgz | cut -f1 -d' ') > surreal-${{ env.NAME }}.darwin-arm64.txt
 
           # Linux amd64
           - arch: x86_64-unknown-linux-gnu
             runner: ubuntu-latest-16-cores
-            file: surreal-${{ inputs.version }}.linux-amd64
+            file: surreal-${{ env.NAME }}.linux-amd64
             build-step: |
               docker build \
                 --platform linux/amd64 \
@@ -176,12 +186,12 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surrealdb/target/release/surreal surreal-${{ inputs.version }}.linux-amd64
+              docker cp binary:/surrealdb/target/release/surreal surreal-${{ env.NAME }}.linux-amd64
 
           # Linux arm64
           - arch: aarch64-unknown-linux-gnu
             runner: ["self-hosted", "arm64", "4-cores"]
-            file: surreal-${{ inputs.version }}.linux-arm64
+            file: surreal-${{ env.NAME }}.linux-arm64
             build-step: |
               docker build \
                 --platform linux/arm64 \
@@ -190,12 +200,12 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surrealdb/target/release/surreal surreal-${{ inputs.version }}.linux-arm64
+              docker cp binary:/surrealdb/target/release/surreal surreal-${{ env.NAME }}.linux-arm64
 
           # Windows amd64
           - arch: x86_64-pc-windows-msvc
             runner: windows-latest
-            file: surreal-${{ inputs.version }}.windows-amd64
+            file: surreal-${{ env.NAME }}.windows-amd64
             build-step: |
               # Prepare deps
               vcpkg integrate install
@@ -205,20 +215,15 @@ jobs:
 
               # Package
               cd target/x86_64-pc-windows-msvc/release
-              cp surreal.exe surreal-${{ inputs.version }}.windows-amd64.exe
-              echo $(shasum -a 256 surreal-${{ inputs.version }}.windows-amd64.exe | cut -f1 -d' ') > surreal-${{ inputs.version }}.windows-amd64.txt
+              cp surreal.exe surreal-${{ env.NAME }}.windows-amd64.exe
+              echo $(shasum -a 256 surreal-${{ env.NAME }}.windows-amd64.exe | cut -f1 -d' ') > surreal-${{ env.NAME }}.windows-amd64.txt
 
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          aws-region: us-east-2
-          aws-access-key-id: ${{ secrets.AMAZON_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AMAZON_SECRET_KEY }}
+          ref: ${{ env.GIT_REF }}
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -242,10 +247,20 @@ jobs:
             target/${{ matrix.arch }}/release/${{ matrix.file }}.txt
             target/${{ matrix.arch }}/release/${{ matrix.file }}.exe
 
+  publish-docker:
+    uses: ./.github/workflows/_docker.yml
+    with:
+      image-prefix: surrealdb
+      tag-prefix: ${{ env.NAME }}
+      latest: ${{ env.LATEST }}
+      build: false
+      publish: ${{ env.PUBLISH }}
+
   publish:
     name: Publish artifacts binaries
-    if: ${{ github.event.inputs.publish == 'true' }}
-    needs: [build, docker]
+    needs: [test, lint, build, docker]
+    if: ${{ env.PUBLISH == 'true' }}
+    environment: ${{ env.ENV_NAME }}
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -258,7 +273,7 @@ jobs:
 
       - name: Publish release
         uses: softprops/action-gh-release@v1
-        if: ${{ github.event.inputs.version != 'nightly' }}
+        if: ${{ env.CREATE_RELEASE }}
         with:
           name: "Release ${{ github.ref_name }}"
           files: |
@@ -266,8 +281,8 @@ jobs:
             artifacts/*.tgz
             artifacts/*.exe
 
-      - name: Set version
-        if: ${{ github.event.inputs.version != 'nightly' }}
+      - name: Set latest version
+        if: ${{ env.CREATE_RELEASE }}
         run: |
           echo ${{ github.ref_name }} > latest.txt
           # TODO: remove echo
@@ -283,7 +298,7 @@ jobs:
       - name: Publish binaries
         run: |
           # TODO: remove echo
-          echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ inputs.version }}/
+          echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ env.NAME }}/
 
   package-macos:
     name: Package and publish macOS universal binary
@@ -293,13 +308,13 @@ jobs:
       - name: Download amd64 binary
         uses: actions/download-artifact@v3
         with:
-          name: surreal-${{ inputs.version }}.darwin-amd64
+          name: surreal-${{ env.NAME }}.darwin-amd64
           path: amd64
 
       - name: Download arm64 binary
         uses: actions/download-artifact@v3
         with:
-          name: surreal-${{ inputs.version }}.darwin-arm64
+          name: surreal-${{ env.NAME }}.darwin-arm64
           path: arm64
 
       - name: Configure AWS
@@ -311,7 +326,7 @@ jobs:
 
       - name: Package universal MacOS binary
         run: |
-          FILE="surreal-${{ inputs.version }}.darwin-universal"
+          FILE="surreal-${{ env.NAME }}.darwin-universal"
           lipo -create -output surreal amd64/surreal arm64/surreal
           chmod +x surreal
           tar -zcvf $FILE.tgz surreal
@@ -321,18 +336,15 @@ jobs:
         if: ${{ github.event.inputs.publish == 'true' }}
         run: |
           # TODO: remove echo
-          echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ inputs.version }}/
-          echo aws s3 cp --cache-control 'no-store' $FILE.txt s3://download.surrealdb.com/${{ inputs.version }}/
+          echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ env.NAME }}/
+          echo aws s3 cp --cache-control 'no-store' $FILE.txt s3://download.surrealdb.com/${{ env.NAME }}/
 
   propagate:
     name: Propagate binaries to all regions
-    if: ${{ github.event.inputs.publish == 'true' }}
+    if: ${{ env.PUBLISH }}
     needs: [publish, package-macos]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v3
-
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
