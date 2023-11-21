@@ -41,58 +41,6 @@ defaults:
   run:
     shell: bash
 
-env:
-  MATRIX:
-    include:
-      ########################################
-      # Base images
-      ########################################
-      # Prod AMD64 image
-      - job-name: Base Prod AMD64
-        dockerfile: docker/Dockerfile
-        build-target: prod
-        platform: linux/amd64
-        runner: ubuntu-latest-4-cores
-      # Prod ARM64 image
-      - job-name: Base Prod ARM64
-        dockerfile: docker/Dockerfile
-        build-target: prod
-        platform: linux/arm64
-        runner: ["self-hosted", "arm64", "4-cores"]
-      # Dev AMD64 image
-      - job-name: Base Dev AMD64
-        tag-suffix: -dev
-        dockerfile: docker/Dockerfile
-        build-target: dev
-        platform: linux/amd64
-        runner: ubuntu-latest-4-cores
-      # Dev ARM64 image
-      - job-name: Base Dev ARM64
-        tag-suffix: -dev
-        dockerfile: docker/Dockerfile
-        build-target: dev
-        platform: linux/arm64
-        runner: ["self-hosted", "arm64", "4-cores"]
-
-      ########################################
-      # FoundationDB images (FDB client library is only available for amd64)
-      ########################################
-      # Prod AMD64 image
-      - job-name: FDB Prod AMD64
-        image-suffix: -fdb
-        dockerfile: docker/Dockerfile.fdb
-        build-target: prod
-        platform: linux/amd64
-        runner: ubuntu-latest-4-cores
-      # Dev AMD64 image
-      - job-name: FDB Dev AMD64
-        image-suffix: -fdb
-        tag-suffix: -dev
-        dockerfile: docker/Dockerfile.fdb
-        build-target: dev
-        platform: linux/amd64
-        runner: ubuntu-latest-4-cores
-
 jobs:
   prepare:
     name: Prepare steps
@@ -106,7 +54,7 @@ jobs:
           echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]') >> $GITHUB_OUTPUT
           
   build:
-    name: Build ${{ matrix.job-name }}
+    name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ build-target }}, ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     needs: prepare
     if: ${{ inputs.build }}
@@ -115,7 +63,43 @@ jobs:
       DOCKER_IMAGE_TAG: ${{ needs.prepare.outputs.tag-prefix }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(env.MATRIX) }}
+      matrix:
+        include:
+          ########################################
+          # Base images
+          ########################################
+          # Prod AMD64 image
+          - &base_image
+            dockerfile: docker/Dockerfile
+            build-target: prod
+            platform: linux/amd64
+            runner: ubuntu-latest-4-cores
+          # Prod ARM64 image
+          - <<: *base_image
+            platform: linux/arm64
+            runner: ["self-hosted", "arm64", "4-cores"]
+          # Dev AMD64 image
+          - <<: *base_image
+            tag-suffix: -dev
+          # Dev ARM64 image
+          - <<: *base_image
+            tag-suffix: -dev
+            platform: linux/arm64
+            runner: ["self-hosted", "arm64", "4-cores"]
+
+          ########################################
+          # FoundationDB images (FDB client library is only available for amd64)
+          ########################################
+          # Prod AMD64 image
+          - &fdb_image
+            image-suffix: -fdb
+            dockerfile: docker/Dockerfile.fdb
+            build-target: prod
+            platform: linux/amd64
+            runner: ubuntu-latest-4-cores
+          # Dev AMD64 image
+          - <<: *fdb_image
+            tag-suffix: -dev
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -178,7 +162,7 @@ jobs:
           docker push ${{ steps.build.outputs.ecr-image }}
 
   push:
-    name: Push ${{ matrix.job-name }}
+    name: Push ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ build-target }}, ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     needs: prepare
     if: ${{ inputs.publish }}
@@ -188,7 +172,43 @@ jobs:
       DOCKER_IMAGE_TAG_LATEST: latest${{ matrix.tag-suffix }} # i.e. .../latest-dev
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(env.MATRIX) }}
+      matrix:
+        include:
+          ########################################
+          # Base images
+          ########################################
+          # Prod AMD64 image
+          - &base_image
+            dockerfile: docker/Dockerfile
+            build-target: prod
+            platform: linux/amd64
+            runner: ubuntu-latest-4-cores
+          # Prod ARM64 image
+          - <<: *base_image
+            platform: linux/arm64
+            runner: ["self-hosted", "arm64", "4-cores"]
+          # Dev AMD64 image
+          - <<: *base_image
+            tag-suffix: -dev
+          # Dev ARM64 image
+          - <<: *base_image
+            tag-suffix: -dev
+            platform: linux/arm64
+            runner: ["self-hosted", "arm64", "4-cores"]
+
+          ########################################
+          # FoundationDB images (FDB client library is only available for amd64)
+          ########################################
+          # Prod AMD64 image
+          - &fdb_image
+            image-suffix: -fdb
+            dockerfile: docker/Dockerfile.fdb
+            build-target: prod
+            platform: linux/amd64
+            runner: ubuntu-latest-4-cores
+          # Dev AMD64 image
+          - <<: *fdb_image
+            tag-suffix: -dev
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -213,7 +233,7 @@ jobs:
           ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
           DOCKER_IMAGE_CURRENT: docker.io/surrealdb/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
         run: |
-          echo docker pull ${{ env.ECR_IMAGE }}
+          echo docker pull --platform ${{ matrix.platform }} ${{ env.ECR_IMAGE }}
           echo docker tag ${{ env.ECR_IMAGE }} ${{ env.DOCKER_IMAGE_CURRENT }}
           echo docker push ${{ env.DOCKER_IMAGE_CURRENT }}
       
