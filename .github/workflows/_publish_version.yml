@@ -133,7 +133,8 @@ jobs:
       git-ref: ${{ env.GIT_REF }}
       image-prefix: surrealdb
       tag-prefix: ${{ env.NAME }}
-      build: ${{ env.PUBLISH }}
+      build: true
+      publish: false
 
   build:
     name: Build ${{ matrix.arch }} binary
@@ -292,7 +293,7 @@ jobs:
           # TODO: remove echo
           echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ env.NAME }}/
 
-  publish-docker:
+  docker-publish:
     needs: [publish]
     uses: ./.github/workflows/_docker.yml
     with:
