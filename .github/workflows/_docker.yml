@@ -174,7 +174,7 @@ jobs:
           docker push ${{ steps.build.outputs.ecr-image }}
 
   push:
-    name: Push ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ build-target }}, ${{ matrix.platform }})
+    name: Push ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     needs: prepare
     if: ${{ inputs.publish }}
