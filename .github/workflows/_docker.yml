@@ -57,10 +57,7 @@ jobs:
         id: tag-prefix
         run: |
           set -x
-          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}')"
-          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g')"
-          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]')"
-          echo "tag-prefix=$(echo '${{ inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "tag-prefix=$(echo '${{ github.event.inputs.tag-prefix }}' | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       
       # Define it here so we don't need to duplicate the content in the build and push jobs
       - name: Set matrix
@@ -114,9 +111,9 @@ jobs:
     name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     needs: prepare
-    if: ${{ inputs.build }}
+    if: ${{ github.event.inputs.build }}
     env:
-      DOCKER_IMAGE_REPO: ${{ inputs.image-prefix }}${{ matrix.image-suffix }} # i.e. surrealdb/...
+      DOCKER_IMAGE_REPO: ${{ github.event.inputs.image-prefix }}${{ matrix.image-suffix }} # i.e. surrealdb/...
       DOCKER_IMAGE_TAG: ${{ needs.prepare.outputs.tag-prefix }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
     strategy:
       fail-fast: false
@@ -125,7 +122,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ inputs.git-ref }}
+          ref: ${{ github.event.inputs.git-ref }}
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
@@ -187,9 +184,9 @@ jobs:
     name: Push ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     needs: prepare
-    if: ${{ inputs.publish }}
+    if: ${{ github.event.inputs.publish }}
     env:
-      DOCKER_IMAGE_REPO: ${{ inputs.image-prefix }}${{ matrix.image-suffix }} # i.e. surrealdb/...
+      DOCKER_IMAGE_REPO: ${{ github.event.inputs.image-prefix }}${{ matrix.image-suffix }} # i.e. surrealdb/...
       DOCKER_IMAGE_TAG_CURRENT: ${{ needs.prepare.outputs.tag-prefix }}${{ matrix.tag-suffix }} # i.e. .../nightly-dev
       DOCKER_IMAGE_TAG_LATEST: latest${{ matrix.tag-suffix }} # i.e. .../latest-dev
     strategy:
@@ -225,7 +222,7 @@ jobs:
       
       # Push the prod image as latest if this workflow is meant to update the latest tag
       - name: Push the Docker image with tag 'latest'
-        if: ${{ inputs.latest }}
+        if: ${{ github.event.inputs.latest }}
         env:
           ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
           DOCKER_IMAGE_LATEST: docker.io/surrealdb/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_LATEST }}
