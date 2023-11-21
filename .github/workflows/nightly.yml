@@ -1,5 +1,7 @@
 name: Nightly release
 
+run-name: "Manual nightly release '${{ inputs.git_ref }}' (publish: ${{ inputs.publish }})"
+
 on:
   workflow_dispatch:
     inputs:

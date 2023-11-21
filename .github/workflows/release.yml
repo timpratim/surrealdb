@@ -1,3 +1,5 @@
+name: Release
+
 run-name: "Manual release '${{ inputs.git_ref }}' (publish: ${{ inputs.publish }}, latest: ${{ inputs.latest }})"
 
 on:
