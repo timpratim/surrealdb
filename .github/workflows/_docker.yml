@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag-prefix: ${{ steps.tag-prefix.outputs.tag-prefix }}
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ toJson(steps.set-matrix.outputs.matrix) }}
     steps:
       - name: Sanitize tag name
         id: tag-prefix
