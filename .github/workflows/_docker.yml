@@ -79,9 +79,11 @@ jobs:
                 runner: ["self-hosted", "arm64", "4-cores"]
               # Dev AMD64 image
               - <<: *base_image
+                build-target: dev
                 tag-suffix: -dev
               # Dev ARM64 image
               - <<: *base_image
+                build-target: dev
                 tag-suffix: -dev
                 platform: linux/arm64
                 runner: ["self-hosted", "arm64", "4-cores"]
@@ -98,6 +100,7 @@ jobs:
                 runner: ubuntu-latest-4-cores
               # Dev AMD64 image
               - <<: *fdb_image
+                build-target: dev
                 tag-suffix: -dev
         run: |
           echo '${{ env.MATRIX }}' > matrix.yaml
