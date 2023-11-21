@@ -240,7 +240,10 @@ jobs:
           targets: ${{ matrix.arch }}
 
       - name: Output package versions
-        run: set -x; go version ; cargo version ; rustc --version ; cmake --version ; gcc --version ; g++ --version ; perl -v
+        run: |
+          set -x
+          set +e
+          go version ; cargo version ; rustc --version ; cmake --version ; gcc --version ; g++ --version ; perl -v
 
       - name: Build step
         run: ${{ matrix.build-step }}
