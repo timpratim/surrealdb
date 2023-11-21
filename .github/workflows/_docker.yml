@@ -140,7 +140,7 @@ jobs:
       - name: Build the Docker image
         id: build
         run: |
-          ECR_IMAGE=${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+          ECR_IMAGE=${{ steps.login-ecr.outputs.registry }}/surrealdb-ci:${{ env.DOCKER_IMAGE_TAG }}
 
           docker buildx build \
             --platform ${{ matrix.platform }} \
@@ -211,7 +211,7 @@ jobs:
       # This second build reuses the cache from the build above
       - name: Push the Docker image
         env:
-          ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
+          ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/surrealdb-ci:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
           DOCKER_IMAGE_CURRENT: docker.io/surrealdb/${{ env.DOCKER_IMAGE_REPO }}:${{ env.DOCKER_IMAGE_TAG_CURRENT }}
         run: |
           echo docker pull --platform ${{ matrix.platform }} ${{ env.ECR_IMAGE }}
