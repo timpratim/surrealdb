@@ -21,6 +21,7 @@ jobs:
       image-prefix: surrealdb
       tag-prefix: ${{ github.head_ref || github.ref_name }}
       build: true
+    secrets: inherit
 
   # format:
   #   name: Check format
