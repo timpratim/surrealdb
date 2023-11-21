@@ -129,9 +129,9 @@ jobs:
   docker-build:
     uses: ./.github/workflows/_docker.yml
     with:
-      git-ref: ${{ env.GIT_REF }}
+      git-ref: ${{ github.event.inputs.git_ref || github.ref_name }}
       image-prefix: surrealdb
-      tag-prefix: ${{ env.NAME }}
+      tag-prefix: ${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}
       build: true
       publish: false
     secrets: inherit
@@ -297,9 +297,9 @@ jobs:
     needs: [publish]
     uses: ./.github/workflows/_docker.yml
     with:
+      git-ref: ${{ github.event.inputs.git_ref || github.ref_name }}
       image-prefix: surrealdb
-      tag-prefix: ${{ env.NAME }}
-      latest: ${{ env.LATEST }}
+      tag-prefix: ${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}
       build: false
       publish: true
     secrets: inherit
