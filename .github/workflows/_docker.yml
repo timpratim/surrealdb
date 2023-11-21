@@ -57,49 +57,47 @@ jobs:
       # Define it here so we don't need to duplicate the content in the build and push jobs
       - name: Set matrix
         id: set-matrix
+        env:
+          MATRIX: |
+            include:
+              ########################################
+              # Base images
+              ########################################
+              # Prod AMD64 image
+              - &base_image
+                dockerfile: docker/Dockerfile
+                build-target: prod
+                platform: linux/amd64
+                runner: ubuntu-latest-4-cores
+              # Prod ARM64 image
+              - <<: *base_image
+                platform: linux/arm64
+                runner: ["self-hosted", "arm64", "4-cores"]
+              # Dev AMD64 image
+              - <<: *base_image
+                tag-suffix: -dev
+              # Dev ARM64 image
+              - <<: *base_image
+                tag-suffix: -dev
+                platform: linux/arm64
+                runner: ["self-hosted", "arm64", "4-cores"]
+
+              ########################################
+              # FoundationDB images (FDB client library is only available for amd64)
+              ########################################
+              # Prod AMD64 image
+              - &fdb_image
+                image-suffix: -fdb
+                dockerfile: docker/Dockerfile.fdb
+                build-target: prod
+                platform: linux/amd64
+                runner: ubuntu-latest-4-cores
+              # Dev AMD64 image
+              - <<: *fdb_image
+                tag-suffix: -dev
         run: |
-          MATRIX=$(cat <<-END
-          include:
-          ########################################
-          # Base images
-          ########################################
-          # Prod AMD64 image
-          - &base_image
-            dockerfile: docker/Dockerfile
-            build-target: prod
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Prod ARM64 image
-          - <<: *base_image
-            platform: linux/arm64
-            runner: ["self-hosted", "arm64", "4-cores"]
-          # Dev AMD64 image
-          - <<: *base_image
-            tag-suffix: -dev
-          # Dev ARM64 image
-          - <<: *base_image
-            tag-suffix: -dev
-            platform: linux/arm64
-            runner: ["self-hosted", "arm64", "4-cores"]
-
-          ########################################
-          # FoundationDB images (FDB client library is only available for amd64)
-          ########################################
-          # Prod AMD64 image
-          - &fdb_image
-            image-suffix: -fdb
-            dockerfile: docker/Dockerfile.fdb
-            build-target: prod
-            platform: linux/amd64
-            runner: ubuntu-latest-4-cores
-          # Dev AMD64 image
-          - <<: *fdb_image
-            tag-suffix: -dev
-          END
-          )
-
-          MATRIX_JSON=$(echo "$MATRIX" | yq -o json -)
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo '${{ env.MATRIX }}' > matrix.yaml
+          echo "matrix=$(yq -o json matrix.yaml)" >> $GITHUB_OUTPUT
           
   build:
     name: Build ${{ matrix.image-suffix == '-fdb' && 'fdb image' || 'base image'  }} (${{ matrix.build-target }}, ${{ matrix.platform }})
