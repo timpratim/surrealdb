@@ -33,7 +33,6 @@ env:
   PUBLISH: ${{ github.event.inputs.publish }}
   LATEST: ${{ github.event.inputs.latest }}
   CREATE_RELEASE: ${{ github.event.inputs.create-release }}
-  ENV_NAME: ${{ env.NAME == 'nightly' && 'nightly' || 'release' }}
 
 defaults:
   run:
@@ -254,7 +253,7 @@ jobs:
     name: Publish artifacts binaries
     needs: [test, lint, build, docker]
     if: ${{ env.PUBLISH }}
-    environment: ${{ env.ENV_NAME }}
+    environment: ${{ env.NAME == 'nightly' && 'nightly' || 'release' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
