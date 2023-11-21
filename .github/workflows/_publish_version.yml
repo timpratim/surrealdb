@@ -26,22 +26,25 @@ on:
         default: false
         description: "Create a GitHub release"
 
-env:
-  # If the name is not provided, use the git_ref (i.e. v1.0.0)
-  NAME: ${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}
-  GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
-  PUBLISH: ${{ github.event.inputs.publish }}
-  LATEST: ${{ github.event.inputs.latest }}
-  CREATE_RELEASE: ${{ github.event.inputs.create-release }}
-
 defaults:
   run:
     shell: bash
 
 jobs:
+  prepare-vars:
+    name: Prepare vars
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set outputs
+        id: outputs
+        run: |
+          echo "git-ref=${{ github.event.inputs.git_ref || github.ref_name }}" >> $GITHUB_OUTPUT
+          # If the name is not provided, use the git_ref (i.e. v1.0.0)
+          echo "name=${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}" >> $GITHUB_OUTPUT
   test:
     name: Test
     runs-on: ubuntu-latest-16-cores
+    needs: [prepare-vars]
     steps:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -51,12 +54,12 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.GIT_REF }}
+          ref: ${{ needs.prepare-vars.outputs.git-ref }}
 
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
         with:
-          save-if: ${{ env.GIT_REF == 'main' }}
+          save-if: ${{ needs.prepare-vars.outputs.git-ref == 'main' }}
 
       - name: Free up some disk space
         run: |
@@ -97,12 +100,13 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest-16-cores
+    needs: [prepare-vars]
     steps:
 
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.GIT_REF }}
+          ref: ${{ needs.prepare-vars.outputs.git-ref }}
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -127,17 +131,19 @@ jobs:
         run: cargo make ci-clippy
 
   docker-build:
+    needs: [prepare-vars]
     uses: ./.github/workflows/_docker.yml
     with:
-      git-ref: ${{ github.event.inputs.git_ref || github.ref_name }}
+      git-ref: ${{ needs.prepare-vars.outputs.git-ref }}
       image-prefix: surrealdb
-      tag-prefix: ${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}
+      tag-prefix: ${{ needs.prepare-vars.outputs.name }}
       build: true
       publish: false
     secrets: inherit
 
   build:
     name: Build ${{ matrix.arch }} binary
+    needs: [prepare-vars]
     strategy:
       fail-fast: false
       matrix:
@@ -145,7 +151,7 @@ jobs:
           # MacOS amd64
           - arch: x86_64-apple-darwin
             runner: macos-latest-xl
-            file: surreal-${{ env.NAME }}.darwin-amd64
+            file: surreal-${{ needs.prepare-vars.outputs.name }}.darwin-amd64
             build-step: |
               # Prepare deps
               brew install protobuf
@@ -156,13 +162,13 @@ jobs:
               # Package
               cd target/x86_64-apple-darwin/release
               chmod +x surreal
-              tar -zcvf surreal-${{ env.NAME }}.darwin-amd64.tgz surreal
-              echo $(shasum -a 256 surreal-${{ env.NAME }}.darwin-amd64.tgz | cut -f1 -d' ') > surreal-${{ env.NAME }}.darwin-amd64.txt
+              tar -zcvf surreal-${{ needs.prepare-vars.outputs.name }}.darwin-amd64.tgz surreal
+              echo $(shasum -a 256 surreal-${{ needs.prepare-vars.outputs.name }}.darwin-amd64.tgz | cut -f1 -d' ') > surreal-${{ needs.prepare-vars.outputs.name }}.darwin-amd64.txt
 
           # MacOS arm64
           - arch: aarch64-apple-darwin
             runner: macos-latest-xl
-            file: surreal-${{ env.NAME }}.darwin-arm64
+            file: surreal-${{ needs.prepare-vars.outputs.name }}.darwin-arm64
             build-step: |
               # Prepare deps
               brew install protobuf
@@ -173,13 +179,13 @@ jobs:
               # Package
               cd target/aarch64-apple-darwin/release
               chmod +x surreal
-              tar -zcvf surreal-${{ env.NAME }}.darwin-arm64.tgz surreal
-              echo $(shasum -a 256 surreal-${{ env.NAME }}.darwin-arm64.tgz | cut -f1 -d' ') > surreal-${{ env.NAME }}.darwin-arm64.txt
+              tar -zcvf surreal-${{ needs.prepare-vars.outputs.name }}.darwin-arm64.tgz surreal
+              echo $(shasum -a 256 surreal-${{ needs.prepare-vars.outputs.name }}.darwin-arm64.tgz | cut -f1 -d' ') > surreal-${{ needs.prepare-vars.outputs.name }}.darwin-arm64.txt
 
           # Linux amd64
           - arch: x86_64-unknown-linux-gnu
             runner: ubuntu-latest-16-cores
-            file: surreal-${{ env.NAME }}.linux-amd64
+            file: surreal-${{ needs.prepare-vars.outputs.name }}.linux-amd64
             build-step: |
               docker build \
                 --platform linux/amd64 \
@@ -188,12 +194,12 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surrealdb/target/release/surreal surreal-${{ env.NAME }}.linux-amd64
+              docker cp binary:/surrealdb/target/release/surreal surreal-${{ needs.prepare-vars.outputs.name }}.linux-amd64
 
           # Linux arm64
           - arch: aarch64-unknown-linux-gnu
             runner: ["self-hosted", "arm64", "4-cores"]
-            file: surreal-${{ env.NAME }}.linux-arm64
+            file: surreal-${{ needs.prepare-vars.outputs.name }}.linux-arm64
             build-step: |
               docker build \
                 --platform linux/arm64 \
@@ -202,12 +208,12 @@ jobs:
                 -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
-              docker cp binary:/surrealdb/target/release/surreal surreal-${{ env.NAME }}.linux-arm64
+              docker cp binary:/surrealdb/target/release/surreal surreal-${{ needs.prepare-vars.outputs.name }}.linux-arm64
 
           # Windows amd64
           - arch: x86_64-pc-windows-msvc
             runner: windows-latest
-            file: surreal-${{ env.NAME }}.windows-amd64
+            file: surreal-${{ needs.prepare-vars.outputs.name }}.windows-amd64
             build-step: |
               # Prepare deps
               vcpkg integrate install
@@ -217,15 +223,15 @@ jobs:
 
               # Package
               cd target/x86_64-pc-windows-msvc/release
-              cp surreal.exe surreal-${{ env.NAME }}.windows-amd64.exe
-              echo $(shasum -a 256 surreal-${{ env.NAME }}.windows-amd64.exe | cut -f1 -d' ') > surreal-${{ env.NAME }}.windows-amd64.txt
+              cp surreal.exe surreal-${{ needs.prepare-vars.outputs.name }}.windows-amd64.exe
+              echo $(shasum -a 256 surreal-${{ needs.prepare-vars.outputs.name }}.windows-amd64.exe | cut -f1 -d' ') > surreal-${{ needs.prepare-vars.outputs.name }}.windows-amd64.txt
 
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.GIT_REF }}
+          ref: ${{ needs.prepare-vars.outputs.git-ref }}
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -251,9 +257,9 @@ jobs:
 
   publish:
     name: Publish artifacts binaries
-    needs: [test, lint, build, docker]
-    if: ${{ env.PUBLISH }}
-    environment: ${{ env.NAME == 'nightly' && 'nightly' || 'release' }}
+    needs: [test, lint, build, docker-build, prepare-vars]
+    if: ${{ github.event.inputs.publish }}
+    environment: ${{ needs.prepare-vars.outputs.name == 'nightly' && 'nightly' || 'release' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -266,7 +272,7 @@ jobs:
 
       # - name: Publish release
       #   uses: softprops/action-gh-release@v1
-      #   if: ${{ env.CREATE_RELEASE }}
+      #   if: ${{ github.event.inputs.create-release }}
       #   with:
       #     name: "Release ${{ github.ref_name }}"
       #     files: |
@@ -275,7 +281,7 @@ jobs:
       #       artifacts/*.exe
 
       - name: Set latest version
-        if: ${{ env.CREATE_RELEASE }}
+        if: ${{ github.event.inputs.create-release }}
         run: |
           echo ${{ github.ref_name }} > latest.txt
           # TODO: remove echo
@@ -291,34 +297,34 @@ jobs:
       - name: Publish binaries
         run: |
           # TODO: remove echo
-          echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ env.NAME }}/
+          echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ needs.prepare-vars.outputs.name }}/
 
   docker-publish:
-    needs: [publish]
+    needs: [publish, prepare-vars]
     uses: ./.github/workflows/_docker.yml
     with:
-      git-ref: ${{ github.event.inputs.git_ref || github.ref_name }}
       image-prefix: surrealdb
-      tag-prefix: ${{ github.event.inputs.name || github.event.inputs.git_ref || github.ref_name }}
+      tag-prefix: ${{ needs.prepare-vars.outputs.name }}
+      latest: ${{ github.event.inputs.latest }}
       build: false
       publish: true
     secrets: inherit
 
   package-macos:
     name: Package and publish macOS universal binary
-    needs: [publish]
+    needs: [publish, prepare-vars]
     runs-on: macos-latest
     steps:
       - name: Download amd64 binary
         uses: actions/download-artifact@v3
         with:
-          name: surreal-${{ env.NAME }}.darwin-amd64
+          name: surreal-${{ needs.prepare-vars.outputs.name }}.darwin-amd64
           path: amd64
 
       - name: Download arm64 binary
         uses: actions/download-artifact@v3
         with:
-          name: surreal-${{ env.NAME }}.darwin-arm64
+          name: surreal-${{ needs.prepare-vars.outputs.name }}.darwin-arm64
           path: arm64
 
       - name: Configure AWS
@@ -330,7 +336,7 @@ jobs:
 
       - name: Package universal MacOS binary
         run: |
-          FILE="surreal-${{ env.NAME }}.darwin-universal"
+          FILE="surreal-${{ needs.prepare-vars.outputs.name }}.darwin-universal"
           lipo -create -output surreal amd64/surreal arm64/surreal
           chmod +x surreal
           tar -zcvf $FILE.tgz surreal
@@ -340,12 +346,12 @@ jobs:
         if: ${{ github.event.inputs.publish }}
         run: |
           # TODO: remove echo
-          echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ env.NAME }}/
-          echo aws s3 cp --cache-control 'no-store' $FILE.txt s3://download.surrealdb.com/${{ env.NAME }}/
+          echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ needs.prepare-vars.outputs.name }}/
+          echo aws s3 cp --cache-control 'no-store' $FILE.txt s3://download.surrealdb.com/${{ needs.prepare-vars.outputs.name }}/
 
   propagate:
     name: Propagate binaries to all regions
-    if: ${{ env.PUBLISH }}
+    if: ${{ github.event.inputs.publish }}
     needs: [publish, package-macos]
     runs-on: ubuntu-latest
     steps:
