@@ -17,8 +17,9 @@ jobs:
   docker:
     uses: ./.github/workflows/_docker.yml
     with:
-      image-prefix: surrealdb-ci
-      tag-prefix: ${{ github.sha }}
+      git-ref: ${{ github.ref }}
+      image-prefix: surrealdb
+      tag-prefix: ${{ github.head_ref || github.ref_name }}
       build: true
 
   format:

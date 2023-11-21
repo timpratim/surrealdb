@@ -130,6 +130,7 @@ jobs:
   docker-build:
     uses: ./.github/workflows/_docker.yml
     with:
+      git-ref: ${{ env.GIT_REF }}
       image-prefix: surrealdb
       tag-prefix: ${{ env.NAME }}
       build: ${{ env.PUBLISH }}
@@ -247,15 +248,6 @@ jobs:
             target/${{ matrix.arch }}/release/${{ matrix.file }}.txt
             target/${{ matrix.arch }}/release/${{ matrix.file }}.exe
 
-  publish-docker:
-    uses: ./.github/workflows/_docker.yml
-    with:
-      image-prefix: surrealdb
-      tag-prefix: ${{ env.NAME }}
-      latest: ${{ env.LATEST }}
-      build: false
-      publish: ${{ env.PUBLISH }}
-
   publish:
     name: Publish artifacts binaries
     needs: [test, lint, build, docker]
@@ -299,6 +291,16 @@ jobs:
         run: |
           # TODO: remove echo
           echo aws s3 cp --cache-control 'no-store' artifacts/* s3://download.surrealdb.com/${{ env.NAME }}/
+
+  publish-docker:
+    needs: [publish]
+    uses: ./.github/workflows/_docker.yml
+    with:
+      image-prefix: surrealdb
+      tag-prefix: ${{ env.NAME }}
+      latest: ${{ env.LATEST }}
+      build: false
+      publish: true
 
   package-macos:
     name: Package and publish macOS universal binary

@@ -3,7 +3,7 @@ name: Docker
 on:
   workflow_call:
     inputs:
-      git_ref:
+      git-ref:
         required: true
         type: string
         description: "The github ref to checkout for building the Docker images."
@@ -100,9 +100,18 @@ env:
         runner: ubuntu-latest-4-cores
 
 jobs:
+  prepare:
+    name: Prepare steps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sanitize tag name
+        run: |
+          TAG_PREFIX=$(echo "${TAG_PREFIX}" | sed 's/[^a-zA-Z0-9_.-]/-/g' | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+          
   build:
     name: Build ${{ matrix.job-name }}
     runs-on: ${{ matrix.runner }}
+    needs: prepare
     if: ${{ env.BUILD }}
     env:
       DOCKER_IMAGE_REPO: ${{ env.IMAGE_PREFIX }}${{ matrix.image-suffix }} # i.e. surrealdb/...
@@ -174,6 +183,7 @@ jobs:
   push:
     name: Push ${{ matrix.job-name }}
     runs-on: ${{ matrix.runner }}
+    needs: prepare
     if: ${{ env.PUBLISH }}
     env:
       DOCKER_IMAGE_REPO: ${{ env.IMAGE_PREFIX }}${{ matrix.image-suffix }} # i.e. surrealdb/...
