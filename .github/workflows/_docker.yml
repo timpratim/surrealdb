@@ -98,7 +98,7 @@ jobs:
           END
           )
 
-          MATRIX_JSON=$(echo "$MATRIX" | yq r -j -)
+          MATRIX_JSON=$(echo "$MATRIX" | yq -o json -)
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           
   build:
