@@ -123,7 +123,9 @@ jobs:
         with:
           ref: ${{ inputs.git-ref }}
 
-      - name: Checkout the git ref calling the workflow and use the Dockerfiles from there instead of the from the code checked out above
+      # Checkout only the docker directory. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
+      # When triggered by a push or a schedule, this git ref will be the same as 'inputs.git-ref'
+      - name: Replace docker directory
         uses: actions/checkout@v3
         with:
           sparse-checkout: docker
