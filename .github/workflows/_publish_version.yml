@@ -41,9 +41,9 @@ jobs:
       - name: Set outputs
         id: outputs
         run: |
-          echo "git-ref=${{ github.event.inputs.git-ref || github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "git-ref=${{ inputs.git-ref || github.ref_name }}" >> $GITHUB_OUTPUT
           # If the name is not provided, use the git_ref (i.e. v1.0.0)
-          echo "name=${{ github.event.inputs.name || github.event.inputs.git-ref || github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "name=${{ inputs.name || inputs.git-ref || github.ref_name }}" >> $GITHUB_OUTPUT
   test:
     name: Test
     runs-on: ubuntu-latest-16-cores
@@ -264,7 +264,7 @@ jobs:
   publish:
     name: Publish artifacts binaries
     needs: [test, lint, build, docker-build, prepare-vars]
-    if: ${{ github.event.inputs.publish }}
+    if: ${{ inputs.publish }}
     environment: ${{ needs.prepare-vars.outputs.name == 'nightly' && 'nightly' || 'release' }}
     runs-on: ubuntu-latest
     steps:
@@ -278,7 +278,7 @@ jobs:
 
       # - name: Publish release
       #   uses: softprops/action-gh-release@v1
-      #   if: ${{ github.event.inputs.create-release }}
+      #   if: ${{ inputs.create-release }}
       #   with:
       #     name: "Release ${{ github.ref_name }}"
       #     files: |
@@ -287,7 +287,7 @@ jobs:
       #       artifacts/*.exe
 
       - name: Set latest version
-        if: ${{ github.event.inputs.create-release }}
+        if: ${{ inputs.create-release }}
         run: |
           echo ${{ github.ref_name }} > latest.txt
           # TODO: remove echo
@@ -312,7 +312,7 @@ jobs:
       git-ref: ${{ needs.prepare-vars.outputs.git-ref }}
       image-prefix: surrealdb
       tag-prefix: ${{ needs.prepare-vars.outputs.name }}
-      latest: ${{ github.event.inputs.latest }}
+      latest: ${{ inputs.latest }}
       build: false
       publish: true
     secrets: inherit
@@ -350,7 +350,7 @@ jobs:
           echo $(shasum -a 256 $FILE.tgz | cut -f1 -d' ') > $FILE.txt
 
       - name: Publish universal MacOS binary
-        if: ${{ github.event.inputs.publish }}
+        if: ${{ inputs.publish }}
         run: |
           # TODO: remove echo
           echo aws s3 cp --cache-control 'no-store' $FILE.tgz s3://download.surrealdb.com/${{ needs.prepare-vars.outputs.name }}/
@@ -358,7 +358,7 @@ jobs:
 
   propagate:
     name: Propagate binaries to all regions
-    if: ${{ github.event.inputs.publish }}
+    if: ${{ inputs.publish }}
     needs: [publish, package-macos]
     runs-on: ubuntu-latest
     steps:
