@@ -131,7 +131,7 @@ jobs:
         run: |
           gh repo clone surrealdb/surrealdb /tmp/repo -- --depth 1
           cd /tmp/repo
-          git checkout ${{ github.ref }}
+          git checkout ${{ github.ref_name }}
           cd -
           rm -rf docker
           mv /tmp/repo/docker .
