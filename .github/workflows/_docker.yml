@@ -164,7 +164,12 @@ jobs:
       - name: Build the Docker image
         id: build
         run: |
+          set -x
           ECR_IMAGE=${{ steps.login-ecr.outputs.registry }}/surrealdb-ci:${{ env.DOCKER_IMAGE_TAG }}
+
+          echo $PATH || true
+          which docker || true
+          pwd || true
 
           docker buildx build \
             --load \
