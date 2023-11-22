@@ -230,6 +230,7 @@ pub fn synchronous(ctx: &Context<'_>, name: &str, args: Vec<Value>) -> Result<Va
 		"string::join" => string::join,
 		"string::len" => string::len,
 		"string::lowercase" => string::lowercase,
+		"string::matches" => string::matches,
 		"string::repeat" => string::repeat,
 		"string::replace" => string::replace,
 		"string::reverse" => string::reverse,
@@ -309,6 +310,7 @@ pub fn synchronous(ctx: &Context<'_>, name: &str, args: Vec<Value>) -> Result<Va
 		"type::is::geometry" => r#type::is::geometry,
 		"type::is::int" => r#type::is::int,
 		"type::is::line" => r#type::is::line,
+		"type::is::none" => r#type::is::none,
 		"type::is::null" => r#type::is::null,
 		"type::is::multiline" => r#type::is::multiline,
 		"type::is::multipoint" => r#type::is::multipoint,
@@ -388,6 +390,7 @@ pub async fn asynchronous(
 		"http::patch" => http::patch(ctx).await,
 		"http::delete" => http::delete(ctx).await,
 		//
+		"search::analyze" => search::analyze((ctx, txn, opt)).await,
 		"search::score" => search::score((ctx, txn, doc)).await,
 		"search::highlight" => search::highlight((ctx,txn, doc)).await,
 		"search::offsets" => search::offsets((ctx, txn, doc)).await,
