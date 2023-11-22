@@ -194,7 +194,7 @@ jobs:
                 --platform linux/amd64 \
                 --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
                 -t binary \
-                -f _dockerfiles/docker/Dockerfile.binary \
+                -f _docker/Dockerfile.binary \
                 .
               docker create --name binary binary
               docker cp binary:/surrealdb/target/release/surreal surreal-${{ needs.prepare-vars.outputs.name }}.linux-amd64
@@ -208,7 +208,7 @@ jobs:
                 --platform linux/arm64 \
                 --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
                 -t binary \
-                -f _dockerfiles/docker/Dockerfile.binary \
+                -f _docker/Dockerfile.binary \
                 .
               docker create --name binary binary
               docker cp binary:/surrealdb/target/release/surreal surreal-${{ needs.prepare-vars.outputs.name }}.linux-arm64
@@ -241,8 +241,8 @@ jobs:
       - name: Replace docker directory
         uses: actions/checkout@v4
         with:
-          sparse-checkout: docker
-          path: _dockerfiles
+          filter: docker
+          path: _docker
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
