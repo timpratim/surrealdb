@@ -157,6 +157,10 @@ jobs:
           set -x
           ECR_IMAGE=${{ steps.login-ecr.outputs.registry }}/surrealdb-ci:${{ env.DOCKER_IMAGE_TAG }}
 
+          ls -lah . || true
+          pwd || true
+          ls -lah docker || true
+
           docker pull --platform ${{ matrix.platform }} $ECR_IMAGE || true
           docker buildx build \
             --load \
