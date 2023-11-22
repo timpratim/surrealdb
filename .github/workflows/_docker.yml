@@ -122,25 +122,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.git-ref }}
+      
+      - name: Checkout docker
+        uses: actions/checkout@v4
+        with:
+          path: _docker
 
-      # Checkout only the docker directory. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
+      # Replace docker files. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
       # When triggered by a push or a schedule, this git ref will be the same as 'inputs.git-ref'
-      - name: Replace docker directory
+      - name: Replace docker files
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! which gh; then
-            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-              && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-              && sudo apt update \
-              && sudo apt install gh -y
-          fi
-
-          gh repo clone surrealdb/surrealdb /tmp/repo -- --depth 1 --branch ${{ github.ref_name }}
-          rm -rf docker
-          mv /tmp/repo/docker .
-          rm -rf /tmp/repo
+          rm -rf docker .dockerignore
+          mv _docker/docker .
+          mv _docker/.dockerignore .
+          rm -rf _docker
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
