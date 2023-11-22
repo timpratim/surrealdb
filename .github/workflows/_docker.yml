@@ -126,7 +126,7 @@ jobs:
       - name: Checkout the git ref calling the workflow and use the Dockerfiles from there instead of the from the code checked out above
         uses: actions/checkout@v3
         with:
-          sparse-checkout: docker/*
+          sparse-checkout: docker
           path: _dockerfiles
 
       - name: Set up Buildx
