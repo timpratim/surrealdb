@@ -190,6 +190,10 @@ jobs:
             runner: ubuntu-latest-16-cores
             file: surreal-${{ needs.prepare-vars.outputs.name }}.linux-amd64
             build-step: |
+              ls -lah . || true
+              pwd || true
+              ls -lah docker || true
+
               docker build \
                 --platform linux/amd64 \
                 --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
@@ -204,6 +208,10 @@ jobs:
             runner: ["self-hosted", "arm64", "4-cores"]
             file: surreal-${{ needs.prepare-vars.outputs.name }}.linux-arm64
             build-step: |
+              ls -lah . || true
+              pwd || true
+              ls -lah docker || true
+
               docker build \
                 --platform linux/arm64 \
                 --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
