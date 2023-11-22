@@ -126,6 +126,8 @@ jobs:
       # Checkout only the docker directory. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
       # When triggered by a push or a schedule, this git ref will be the same as 'inputs.git-ref'
       - name: Replace docker directory
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh repo clone surrealdb/surrealdb /tmp/repo -- --depth 1
           rm -rf docker
