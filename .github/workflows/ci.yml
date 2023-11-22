@@ -1,6 +1,6 @@
 name: Continuous integration
 
-run-name: "Manual CI run '${{ inputs.git-ref }}'"
+run-name: "Manual CI run '${{ github.head_ref || github.ref_name }}'"
 
 on:
   workflow_dispatch:
