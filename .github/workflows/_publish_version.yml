@@ -250,7 +250,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh repo clone surrealdb/surrealdb /tmp/repo -- --depth 1 --branch ${{ github.ref }}
+          gh repo clone surrealdb/surrealdb /tmp/repo -- --depth 1
+          cd /tmp/repo
+          git checkout ${{ github.ref }}
+          cd -
           rm -rf docker
           mv /tmp/repo/docker .
           rm -rf /tmp/repo
