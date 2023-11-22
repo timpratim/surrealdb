@@ -241,7 +241,7 @@ jobs:
       - name: Replace docker directory
         uses: actions/checkout@v4
         with:
-          filter: docker
+          filter: docker/*
           path: _docker
 
       - name: Install stable toolchain
