@@ -129,6 +129,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           sparse-checkout: docker
+          path: _dockerfiles
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
@@ -155,7 +156,7 @@ jobs:
             --platform ${{ matrix.platform }} \
             --cache-from type=registry,ref=$ECR_IMAGE \
             --cache-to type=inline \
-            --file docker/${{ matrix.dockerfile }} \
+            --file _dockerfiles/docker/${{ matrix.dockerfile }} \
             --target ${{ matrix.build-target }} \
             --tag $ECR_IMAGE \
             .
