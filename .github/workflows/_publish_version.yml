@@ -34,6 +34,9 @@ jobs:
   prepare-vars:
     name: Prepare vars
     runs-on: ubuntu-latest
+    outputs:
+      git-ref: ${{ steps.outputs.outputs.git-ref }}
+      name: ${{ steps.outputs.outputs.name }}
     steps:
       - name: Set outputs
         id: outputs
