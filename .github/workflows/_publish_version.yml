@@ -194,7 +194,7 @@ jobs:
                 --platform linux/amd64 \
                 --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
                 -t binary \
-                -f _dockerfiles/docker/Dockerfile.binary \
+                -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
               docker cp binary:/surrealdb/target/release/surreal surreal-${{ needs.prepare-vars.outputs.name }}.linux-amd64
@@ -208,7 +208,7 @@ jobs:
                 --platform linux/arm64 \
                 --build-arg="CARGO_EXTRA_FEATURES=storage-tikv,http-compression" \
                 -t binary \
-                -f _dockerfiles/docker/Dockerfile.binary \
+                -f docker/Dockerfile.binary \
                 .
               docker create --name binary binary
               docker cp binary:/surrealdb/target/release/surreal surreal-${{ needs.prepare-vars.outputs.name }}.linux-arm64
@@ -238,11 +238,16 @@ jobs:
 
       # Checkout only the docker directory. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
       # When triggered by a push or a schedule, this git ref will be the same as 'inputs.git-ref'
-      - name: Replace docker directory
+      - name: Clone docker directory
         uses: actions/checkout@v4
         with:
           sparse-checkout: docker
           path: _dockerfiles
+      - name: Replace docker directory
+        run: |
+          rm -rf docker
+          mv _dockerfiles/docker .
+          rm -rf _dockerfiles
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable

@@ -125,11 +125,17 @@ jobs:
 
       # Checkout only the docker directory. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
       # When triggered by a push or a schedule, this git ref will be the same as 'inputs.git-ref'
-      - name: Replace docker directory
+      - name: Clone docker directory
         uses: actions/checkout@v4
         with:
           sparse-checkout: docker
           path: _dockerfiles
+
+      - name: Replace docker directory
+        run: |
+          rm -rf docker
+          mv _dockerfiles/docker .
+          rm -rf _dockerfiles
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
@@ -157,7 +163,7 @@ jobs:
             --platform ${{ matrix.platform }} \
             --cache-from type=registry,ref=$ECR_IMAGE \
             --cache-to type=inline \
-            --file _dockerfiles/docker/${{ matrix.dockerfile }} \
+            --file docker/${{ matrix.dockerfile }} \
             --target ${{ matrix.build-target }} \
             --tag $ECR_IMAGE \
             .
