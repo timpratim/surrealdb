@@ -119,14 +119,14 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.git-ref }}
 
       # Checkout only the docker directory. It allows us to test new Dockerfiles with workflow_dispatch and a custom git ref.
       # When triggered by a push or a schedule, this git ref will be the same as 'inputs.git-ref'
       - name: Replace docker directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           sparse-checkout: docker
           path: _dockerfiles
