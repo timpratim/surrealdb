@@ -1,5 +1,7 @@
 name: Continuous integration
 
+run-name: "Manual CI run '${{ inputs.git-ref }}'"
+
 on:
   workflow_dispatch:
   push:
