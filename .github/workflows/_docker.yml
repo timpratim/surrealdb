@@ -122,9 +122,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ inputs.git-ref }}
+      
+      - name: check docker
+        run: |
+          echo $PATH || true
+          which docker || true
+          pwd || true
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
+      
+      - name: check docker
+        run: |
+          echo $PATH || true
+          which docker || true
+          pwd || true
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -132,10 +144,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_CI_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_CI_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+      
+      - name: check docker
+        run: |
+          echo $PATH || true
+          which docker || true
+          pwd || true
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: check docker
+        run: |
+          echo $PATH || true
+          which docker || true
+          pwd || true
 
       - name: Build the Docker image
         id: build
