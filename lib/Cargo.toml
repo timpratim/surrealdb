@@ -76,6 +76,7 @@ futures-concurrency = "7.4.3"
 fuzzy-matcher = "0.3.7"
 geo = { version = "0.27.0", features = ["use-serde"] }
 hex = { version = "0.4.3", optional = false }
+hnsw = { version= "0.11.0" }
 indexmap = { version = "2.1.0", features = ["serde"] }
 indxdb = { version = "0.4.0", optional = true }
 ipnet = "2.9.0"
@@ -96,6 +97,7 @@ pin-project-lite = "0.2.13"
 quick_cache = "0.4.0"
 radix_trie = { version = "0.2.1", features = ["serde"] }
 rand = "0.8.5"
+rand_pcg = "0.3.1"
 regex = "1.10.2"
 reqwest = { version = "0.11.22", default-features = false, features = ["json", "stream", "multipart"], optional = true }
 revision = "0.5.0"
@@ -111,6 +113,7 @@ serde_json = "1.0.108"
 sha1 = "0.10.6"
 sha2 = "0.10.8"
 snap = "1.1.0"
+space = "0.18.0"
 speedb = { version = "0.0.4", features = ["lz4", "snappy"], optional = true }
 storekey = "0.5.0"
 surrealml-core = { version = "0.0.3", optional = true }
