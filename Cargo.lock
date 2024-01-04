@@ -2405,7 +2405,7 @@ dependencies = [
  "num-traits",
  "rand_core 0.6.4",
  "smallvec",
- "space 0.17.0",
+ "space",
 ]
 
 [[package]]
@@ -5146,16 +5146,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "space"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83919a544070dcfac65f430251bb69e62f1e4ef6f0754fd714a1ac14cfc41a68"
-dependencies = [
- "doc-comment",
- "num-traits",
-]
-
-[[package]]
 name = "spade"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5406,7 +5396,7 @@ dependencies = [
  "sha1",
  "sha2",
  "snap",
- "space 0.18.0",
+ "space",
  "speedb",
  "storekey",
  "surrealdb-derive",
