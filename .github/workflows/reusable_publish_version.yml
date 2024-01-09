@@ -354,6 +354,7 @@ jobs:
               # The target specifies the GLIBC version (2.18, as Rust fails to link with 2.17)
               TARGET: x86_64-unknown-linux-gnu.2.18
             build-step: |
+              set -x
               docker build -t surrealdb-local/zig-builder --target zig-builder -f docker/Dockerfile .
               docker run \
                 --rm -t \
@@ -380,6 +381,7 @@ jobs:
               # The target specifies the GLIBC version (2.18, as Rust fails to link with 2.17)
               TARGET: aarch64-unknown-linux-gnu.2.18
             build-step: |
+              set -x
               docker build -t surrealdb-local/builder --target builder -f docker/Dockerfile .
               docker run \
                 --rm -t \
