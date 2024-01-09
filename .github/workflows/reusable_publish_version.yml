@@ -64,7 +64,8 @@ jobs:
           ref: ${{ inputs.git-ref }}
 
       - name: Install a TOML parser
-        run: cargo install --force --locked --version 0.8.1 taplo-cli
+        run: |
+          curl -L https://github.com/tamasfe/taplo/releases/download/0.8.1/taplo-full-linux-x86_64.gz | gunzip - > /usr/bin/taplo
 
       - name: Configure git
         run: |
@@ -77,7 +78,7 @@ jobs:
         run: |
           set -x
 
-          currentVersion=$(/home/runner/.cargo/bin/taplo get -f lib/Cargo.toml "package.version")
+          currentVersion=$(taplo get -f lib/Cargo.toml "package.version")
 
           if [[ $currentVersion == *"-beta"* ]]; then
             git push origin --delete releases/stable || true
@@ -108,7 +109,7 @@ jobs:
         run: |
           set -x
 
-          currentVersion=$(/home/runner/.cargo/bin/taplo get -f lib/Cargo.toml "package.version")
+          currentVersion=$(taplo get -f lib/Cargo.toml "package.version")
 
           if [[ $currentVersion == *"-beta"* ]]; then
             if [[ "${{ inputs.bump-version }}" == "true" ]]; then
@@ -153,7 +154,7 @@ jobs:
         run: |
           set -x
 
-          version=$(/home/runner/.cargo/bin/taplo get -f lib/Cargo.toml "package.version")
+          version=$(taplo get -f lib/Cargo.toml "package.version")
 
           if [[ "${{ inputs.publish }}" == "true" && ("${{ inputs.environment }}" == "beta" || "${{ inputs.environment }}" == "stable")  ]]; then
             echo "git-ref=v${version}" >> $GITHUB_OUTPUT
@@ -500,7 +501,8 @@ jobs:
 
       - name: Install a TOML parser
         if: ${{ inputs.environment == 'beta' }}
-        run: cargo install --force --locked --version 0.8.1 taplo-cli
+        run: |
+          curl -L https://github.com/tamasfe/taplo/releases/download/0.8.1/taplo-full-linux-x86_64.gz | gunzip - > /usr/bin/taplo
 
       - name: Create a temporary branch
         run: git checkout -b crate
@@ -521,7 +523,7 @@ jobs:
           set -x
 
           # Derive crate version
-          currentVersion=$(/home/runner/.cargo/bin/taplo get -f lib/Cargo.toml "package.version")
+          currentVersion=$(taplo get -f lib/Cargo.toml "package.version")
           major=$(echo $currentVersion | tr "." "\n" | sed -n 1p)
           minor=$(echo $currentVersion | tr "." "\n" | sed -n 2p)
           betaNum=$(echo $currentVersion | tr "." "\n" | sed -n 4p)
