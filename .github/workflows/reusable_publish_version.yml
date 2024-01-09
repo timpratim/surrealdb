@@ -66,6 +66,7 @@ jobs:
       - name: Install a TOML parser
         run: |
           curl -L https://github.com/tamasfe/taplo/releases/download/0.8.1/taplo-full-linux-x86_64.gz | gunzip - > taplo
+          chmod +x taplo
           sudo mv taplo /usr/bin/taplo
 
       - name: Configure git
@@ -504,6 +505,7 @@ jobs:
         if: ${{ inputs.environment == 'beta' }}
         run: |
           curl -L https://github.com/tamasfe/taplo/releases/download/0.8.1/taplo-full-linux-x86_64.gz | gunzip - > taplo
+          chmod +x taplo
           sudo mv taplo /usr/bin/taplo
 
       - name: Create a temporary branch
