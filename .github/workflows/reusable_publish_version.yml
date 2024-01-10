@@ -252,17 +252,6 @@ jobs:
       - name: Check clippy
         run: cargo make ci-clippy
 
-  docker-build:
-    name: Build Docker images
-    needs: [prepare-vars]
-    uses: ./.github/workflows/reusable_docker.yml
-    with:
-      git-ref: ${{ needs.prepare-vars.outputs.git-ref }}
-      tag-prefix: ${{ needs.prepare-vars.outputs.name }}
-      build: true
-      push: false
-    secrets: inherit
-
   build:
     name: Build ${{ matrix.arch }} binary
     needs: [prepare-vars]
