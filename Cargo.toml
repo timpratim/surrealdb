@@ -111,6 +111,9 @@ mimalloc = { version = "0.1.39", default-features = false }
 [target.'cfg(any(target_os = "android", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 jemallocator = "0.5.4"
 
+# override surrealml-core version using a github branch from the surrealdb org
+[patch.crates-io]
+surrealml-core = { git = "https://github.com/surrealdb/surrealml", package = "surrealml-core", branch = "tobiemh-patch-1" }
 
 [dev-dependencies]
 assert_fs = "1.0.13"
