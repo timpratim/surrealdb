@@ -3571,6 +3571,7 @@ dependencies = [
  "half 2.3.1",
  "lazy_static",
  "libc",
+ "libloading",
  "ndarray",
  "tar",
  "thiserror",
@@ -5368,7 +5369,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "surrealdb",
- "surrealml-core",
+ "surrealml-core 0.0.6 (git+https://github.com/surrealdb/surrealml?branch=static-lib)",
  "temp-env",
  "tempfile",
  "test-log",
@@ -5463,7 +5464,7 @@ dependencies = [
  "surrealdb-derive",
  "surrealdb-jsonwebtoken",
  "surrealdb-tikv-client",
- "surrealml-core",
+ "surrealml-core 0.0.6 (git+https://github.com/surrealdb/surrealml?branch=static-lib)",
  "temp-dir",
  "test-log",
  "thiserror",
@@ -5553,7 +5554,7 @@ dependencies = [
  "pyo3",
  "serde",
  "serde_json",
- "surrealml-core",
+ "surrealml-core 0.0.6",
  "tokio",
  "uuid",
 ]
@@ -5570,6 +5571,20 @@ dependencies = [
  "ort",
  "regex",
  "tokio",
+]
+
+[[package]]
+name = "surrealml-core"
+version = "0.0.6"
+source = "git+https://github.com/surrealdb/surrealml?branch=static-lib#b4d1f6a46791ddd06433a775831d5d582bab968e"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "ndarray",
+ "once_cell",
+ "ort",
+ "regex",
 ]
 
 [[package]]
