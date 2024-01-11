@@ -357,7 +357,7 @@ jobs:
                 -e SURREAL_BUILD_METADATA=$SURREAL_BUILD_METADATA \
                 -e ORT_STRATEGY=$ORT_STRATEGY \
                 -e ORT_LIB_LOCATION=$ORT_LIB_LOCATION \
-                -v /tmp/onnxruntime:/tmp/onnxruntime \
+                -v $ORT_LIB_LOCATION:$ORT_LIB_LOCATION \
                 surrealdb-local/zig-builder \
                   --target x86_64-unknown-linux-gnu.2.18 --features ${features} --release --locked
 
@@ -403,7 +403,7 @@ jobs:
                 -e SURREAL_BUILD_METADATA=$SURREAL_BUILD_METADATA \
                 -e ORT_STRATEGY=$ORT_STRATEGY \
                 -e ORT_LIB_LOCATION=$ORT_LIB_LOCATION \
-                -v /tmp/onnxruntime:/tmp/onnxruntime \
+                -v $ORT_LIB_LOCATION:$ORT_LIB_LOCATION \
                 surrealdb-local/zig-builder \
                   --target aarch64-unknown-linux-gnu.2.18 --features ${features} --release --locked
 
