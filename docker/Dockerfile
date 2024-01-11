@@ -27,6 +27,9 @@ RUN rustup target add aarch64-unknown-linux-gnu
 # Install cargo-zigbuild
 RUN cargo install cargo-zigbuild
 
+# Install surrealml dependencies
+RUN apt-get install -y libpython3-dev
+
 WORKDIR /surrealdb
 ENTRYPOINT [ "cargo", "zigbuild" ]
 

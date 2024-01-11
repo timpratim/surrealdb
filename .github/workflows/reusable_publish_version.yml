@@ -274,9 +274,17 @@ jobs:
               if [[ "${{ inputs.http-compression }}" == "true" ]]; then
                 features=${features},http-compression
               fi
+
               if [[ "${{ inputs.ml }}" == "true" ]]; then
                 features=${features},ml
+
+                # Download libonnxruntime's static library and tell ORT crate to use it
+                mkdir /tmp/onnxruntime
+                curl -sSL https://github.com/surrealdb/onnxruntime-build/releases/download/v1.16.3/onnxruntime-osx-x86_64-static_lib-1.16.3.tgz | \
+                  tar -xz -C /tmp/onnxruntime/
+                export ORT_STRATEGY=system ORT_LIB_LOCATION=/tmp/onnxruntime/lib
               fi
+
               cargo build --features $features --release --locked --target x86_64-apple-darwin
 
               # Package
@@ -301,8 +309,15 @@ jobs:
               if [[ "${{ inputs.http-compression }}" == "true" ]]; then
                 features=${features},http-compression
               fi
+
               if [[ "${{ inputs.ml }}" == "true" ]]; then
                 features=${features},ml
+
+                # Download libonnxruntime's static library and tell ORT crate to use it
+                mkdir /tmp/onnxruntime
+                curl -sSL https://github.com/surrealdb/onnxruntime-build/releases/download/v1.16.3/onnxruntime-osx-arm64-static_lib-1.16.3.tgz | \
+                  tar -xz -C /tmp/onnxruntime/
+                export ORT_STRATEGY=system ORT_LIB_LOCATION=/tmp/onnxruntime/lib
               fi
               cargo build --features $features --release --locked --target aarch64-apple-darwin
 
@@ -322,8 +337,15 @@ jobs:
               if [[ "${{ inputs.http-compression }}" == "true" ]]; then
                 features=${features},http-compression
               fi
+
               if [[ "${{ inputs.ml }}" == "true" ]]; then
                 features=${features},ml
+
+                # Download libonnxruntime's static library and tell ORT crate to use it
+                mkdir /tmp/onnxruntime
+                curl -sSL https://github.com/surrealdb/onnxruntime-build/releases/download/v1.16.3/onnxruntime-linux-x64-static_lib-1.16.3.tgz | \
+                  tar -xz -C /tmp/onnxruntime/
+                export ORT_STRATEGY=system ORT_LIB_LOCATION=/tmp/onnxruntime/lib
               fi
 
               docker build -t surrealdb-local/zig-builder --target zig-builder -f docker/Dockerfile .
@@ -333,6 +355,9 @@ jobs:
                 --rm -t \
                 -v $(pwd):/surrealdb \
                 -e SURREAL_BUILD_METADATA=$SURREAL_BUILD_METADATA \
+                -e ORT_STRATEGY=$ORT_STRATEGY \
+                -e ORT_LIB_LOCATION=$ORT_LIB_LOCATION \
+                -v /tmp/onnxruntime:/tmp/onnxruntime \
                 surrealdb-local/zig-builder \
                   --target x86_64-unknown-linux-gnu.2.18 --features ${features} --release --locked
 
@@ -358,8 +383,15 @@ jobs:
               if [[ "${{ inputs.http-compression }}" == "true" ]]; then
                 features=${features},http-compression
               fi
+
               if [[ "${{ inputs.ml }}" == "true" ]]; then
                 features=${features},ml
+
+                # Download libonnxruntime's static library and tell ORT crate to use it
+                mkdir /tmp/onnxruntime
+                curl -sSL https://github.com/surrealdb/onnxruntime-build/releases/download/v1.16.3/onnxruntime-linux-aarch64-static_lib-1.16.3.tgz | \
+                  tar -xz -C /tmp/onnxruntime/
+                export ORT_STRATEGY=system ORT_LIB_LOCATION=/tmp/onnxruntime/lib
               fi
 
               docker build -t surrealdb-local/zig-builder --target zig-builder -f docker/Dockerfile .
@@ -369,6 +401,9 @@ jobs:
                 --rm -t \
                 -v $(pwd):/surrealdb \
                 -e SURREAL_BUILD_METADATA=$SURREAL_BUILD_METADATA \
+                -e ORT_STRATEGY=$ORT_STRATEGY \
+                -e ORT_LIB_LOCATION=$ORT_LIB_LOCATION \
+                -v /tmp/onnxruntime:/tmp/onnxruntime \
                 surrealdb-local/zig-builder \
                   --target aarch64-unknown-linux-gnu.2.18 --features ${features} --release --locked
 
@@ -397,9 +432,17 @@ jobs:
               if [[ "${{ inputs.http-compression }}" == "true" ]]; then
                 features=${features},http-compression
               fi
+
               if [[ "${{ inputs.ml }}" == "true" ]]; then
                 features=${features},ml
+
+                # Download libonnxruntime's static library and tell ORT crate to use it
+                tmp_dir=$(mktemp -d)
+                curl -sSL https://github.com/surrealdb/onnxruntime-build/releases/download/v1.16.3/onnxruntime-win-x64-static_lib-1.16.3.zip | \
+                  unzip -d $tmp_dir -
+                export ORT_STRATEGY=system ORT_LIB_LOCATION=$tmp_dir/lib
               fi
+
               cargo build --features $features --release --locked --target x86_64-pc-windows-msvc
 
               # Package

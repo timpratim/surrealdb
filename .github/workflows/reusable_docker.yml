@@ -8,7 +8,7 @@ on:
       tag-prefix:
         required: true
         type: string
-        description: "The prefix of the Docker image tag. i.e. 'nightly' for 'surrealdb/surrealdb:nightly-dev' or 'surrealdb/surrealdb:nightly-fdb'."
+        description: "The prefix of the Docker image tag. i.e. 'nightly' for 'surrealdb/surrealdb:nightly-dev'."
       build:
         required: false
         type: boolean
