@@ -60,7 +60,7 @@ enum Commands {
 	Import(ImportCommandArguments),
 	#[command(about = "Export an existing database as a SurrealQL script")]
 	Export(ExportCommandArguments),
-	#[command(about = "Output the command-line tool and remote server version information")]
+	#[command(about = "Output the command-line tool and remote server version information", short = 'v')]
 	Version(VersionCommandArguments),
 	#[command(about = "Upgrade to the latest stable version")]
 	Upgrade(UpgradeCommandArguments),
