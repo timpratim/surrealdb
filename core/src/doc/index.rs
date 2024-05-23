@@ -21,12 +21,19 @@ impl<'a> Document<'a> {
 		txn: &Transaction,
 		_stm: &Statement<'_>,
 	) -> Result<(), Error> {
+		trace!(
+			"Called INDEX() "
+		);
 		// Check import
 		if opt.import {
 			return Ok(());
 		}
 		// Was this force targeted at a specific index?
 		let targeted_force = matches!(opt.force, Force::Index(_));
+		trace!(
+			"Called INDEX() {:#?} ",
+			&opt.force
+		);
 		// Collect indexes or skip
 		let ixs = match &opt.force {
 			Force::Index(ix)
@@ -44,8 +51,24 @@ impl<'a> Document<'a> {
 		}
 		// Get the record id
 		let rid = self.id.as_ref().unwrap();
+
+		
+	
 		// Loop through all index statements
 		for ix in ixs.iter() {
+			// Retrieve the field definitions for the table
+			let fields = self.fd(opt, txn).await?;
+			
+			// Check if all fields specified in the index exist in the table's schema
+			for field in ix.cols.iter() {
+				let field_exists = fields.iter().any(|f| f.name == *field);
+				if !field_exists {
+					return Err(Error::FdNotFound {
+						value: field.to_string(),
+					});
+				}
+			}
+			
 			// Calculate old values
 			let o = build_opt_values(ctx, opt, txn, ix, &self.initial).await?;
 
@@ -315,6 +338,7 @@ impl<'a> IndexOperation<'a> {
 	}
 
 	async fn index_non_unique(&mut self, txn: &Transaction) -> Result<(), Error> {
+
 		let mut run = txn.lock().await;
 		// Delete the old index data
 		if let Some(o) = self.o.take() {
